@@ -5,6 +5,7 @@ import com.bestdps.data.BestDpsDataService;
 import com.bestdps.data.GearItem;
 import com.bestdps.data.GearSlot;
 import com.bestdps.data.MonsterStats;
+import com.bestdps.data.SpellStats;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -283,6 +284,53 @@ public class BestDpsOptimizerTest
 		Assert.assertEquals(
 			calculator.calculate(request, new Loadout(knifeOnly)).getMaxHit(),
 			calculator.calculate(request, new Loadout(knifeWithJavelin)).getMaxHit());
+	}
+
+	@Test
+	public void huntersSunlightCrossbowOnlyUsesAntlerBolts()
+	{
+		BestDpsData data = new BestDpsDataService().load();
+		GearItem crossbow = data.getGear(28869);
+		GearItem sunlightBolts = data.getGear(28872);
+		GearItem moonlightBolts = data.getGear(28878);
+		GearItem runiteBolts = data.getGear(9144);
+
+		Assert.assertFalse(RangedAmmo.compatible(null, crossbow));
+		Assert.assertTrue(RangedAmmo.compatible(sunlightBolts, crossbow));
+		Assert.assertTrue(RangedAmmo.compatible(moonlightBolts, crossbow));
+		Assert.assertFalse(RangedAmmo.compatible(runiteBolts, crossbow));
+	}
+
+	@Test
+	public void magicDamageBonusUsesTenthsOfAPercent()
+	{
+		BestDpsData data = new BestDpsDataService().load();
+		MonsterStats monster = data.searchMonsters("goblin", 1).get(0);
+		SpellStats earthSurge = data.getSpells().stream()
+			.filter(spell -> spell.getName().equals("Earth Surge"))
+			.findFirst()
+			.orElseThrow(AssertionError::new);
+		EnumMap<GearSlot, GearItem> gear = new EnumMap<>(GearSlot.class);
+		gear.put(GearSlot.WEAPON, data.getGear(11791));
+		gear.put(GearSlot.HEAD, data.getGear(26241));
+		gear.put(GearSlot.NECK, data.getGear(12002));
+		gear.put(GearSlot.BODY, data.getGear(26243));
+		gear.put(GearSlot.LEGS, data.getGear(26245));
+		OptimizationRequest request = new OptimizationRequest(
+			monster,
+			CombatStyle.MAGIC,
+			PlayerLevels.MAXED,
+			PrayerBonuses.NONE,
+			earthSurge,
+			0,
+			CandidateMode.ALL_STANDARD,
+			false,
+			false,
+			OwnedItems.EMPTY,
+			RequirementProfile.MAXED,
+			10);
+
+		Assert.assertEquals(28, new DpsCalculator().calculate(request, new Loadout(gear)).getMaxHit());
 	}
 
 	@Test

@@ -445,12 +445,13 @@ public final class DpsCalculator
 
 	private int applyMagicDamageBonuses(OptimizationRequest request, Loadout loadout, int maxHit)
 	{
+		int baseMaxHit = maxHit;
 		int magicDamage = loadout.getBonuses().getMagicDamage();
 		if (wearing(loadout, "tumeken"))
 		{
-			magicDamage *= 3;
+			magicDamage = Math.min(1000, magicDamage * 3);
 		}
-		maxHit = (int) Math.floor(maxHit * (1.0 + (magicDamage + request.getPrayers().getMagicDamagePercent()) / 100.0));
+		maxHit = (int) Math.floor(maxHit * (1.0 + (magicDamage + request.getPrayers().getMagicDamagePercent() * 10.0) / 1000.0));
 		if (isSlayerTaskEligible(request) && isImbuedSlayerHelm(loadout))
 		{
 			maxHit = multiply(maxHit, 23, 20);
@@ -461,7 +462,7 @@ public final class DpsCalculator
 		}
 		if (request.getSpell() != null && request.getSpell().getElement().equals(request.getMonster().getWeaknessElement()))
 		{
-			maxHit = multiply(maxHit, 100 + request.getMonster().getWeaknessSeverity(), 100);
+			maxHit += multiply(baseMaxHit, request.getMonster().getWeaknessSeverity(), 100);
 		}
 		if (isDemon(request) && request.getSpell() != null && request.getSpell().getName().contains("Demonbane"))
 		{

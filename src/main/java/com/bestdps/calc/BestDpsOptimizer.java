@@ -234,12 +234,16 @@ public final class BestDpsOptimizer
 		List<GearItem> result = new ArrayList<>();
 		for (GearItem item : candidates)
 		{
-			if (item == null || RangedAmmo.compatible(item, weapon))
+			if (RangedAmmo.compatible(item, weapon))
 			{
 				result.add(item);
 			}
 		}
-		return result.isEmpty() ? java.util.Collections.singletonList(null) : result;
+		if (result.isEmpty() && RangedAmmo.compatible(null, weapon))
+		{
+			return java.util.Collections.singletonList(null);
+		}
+		return result;
 	}
 
 	private static double candidateScore(OptimizationRequest request, GearItem item)
