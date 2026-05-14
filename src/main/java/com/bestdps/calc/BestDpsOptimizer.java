@@ -115,11 +115,19 @@ public final class BestDpsOptimizer
 			return calculator.calculate(request, loadout);
 		}
 		DpsResult best = null;
-		for (SpellStats spell : spells)
+		boolean poweredStaff = isPoweredStaff(loadout.getWeapon());
+		if (poweredStaff)
 		{
-			if (spellAllowed(request, loadout, spell))
+			best = best(best, calculator.calculate(request, loadout));
+		}
+		if (!poweredStaff)
+		{
+			for (SpellStats spell : spells)
 			{
-				best = best(best, calculator.calculate(request.withSpell(spell), loadout));
+				if (spellAllowed(request, loadout, spell))
+				{
+					best = best(best, calculator.calculate(request.withSpell(spell), loadout));
+				}
 			}
 		}
 		return best == null ? calculator.calculate(request, loadout) : best;
@@ -224,46 +232,14 @@ public final class BestDpsOptimizer
 			return candidates;
 		}
 		List<GearItem> result = new ArrayList<>();
-		String weaponName = weapon == null ? "" : weapon.getName().toLowerCase(Locale.ROOT);
-		String category = weapon == null ? "" : weapon.getCategory().toLowerCase(Locale.ROOT);
 		for (GearItem item : candidates)
 		{
-			if (item == null || ammoCompatible(item, weaponName, category))
+			if (item == null || RangedAmmo.compatible(item, weapon))
 			{
 				result.add(item);
 			}
 		}
 		return result.isEmpty() ? java.util.Collections.singletonList(null) : result;
-	}
-
-	private static boolean ammoCompatible(GearItem ammo, String weaponName, String category)
-	{
-		String ammoName = ammo.getName().toLowerCase(Locale.ROOT);
-		if (weaponName.contains("blowpipe"))
-		{
-			return ammoName.contains("dart");
-		}
-		if (weaponName.contains("ballista"))
-		{
-			return ammoName.contains("javelin");
-		}
-		if (weaponName.contains("karil") && weaponName.contains("crossbow"))
-		{
-			return ammoName.contains("bolt rack");
-		}
-		if (weaponName.contains("crystal bow") || weaponName.contains("bow of faerdhinen"))
-		{
-			return false;
-		}
-		if (category.contains("bow") && !category.contains("crossbow"))
-		{
-			return ammoName.contains("arrow");
-		}
-		if (category.contains("crossbow"))
-		{
-			return ammoName.contains("bolt");
-		}
-		return true;
 	}
 
 	private static double candidateScore(OptimizationRequest request, GearItem item)
@@ -321,6 +297,10 @@ public final class BestDpsOptimizer
 	{
 		String spellName = spell.getName();
 		String weapon = label(loadout.getWeapon());
+		if (isPoweredStaff(loadout.getWeapon()))
+		{
+			return false;
+		}
 		if (spellName.contains("Demonbane") && (request.getMonster() == null || !request.getMonster().hasAttribute("demon")))
 		{
 			return false;
@@ -363,6 +343,20 @@ public final class BestDpsOptimizer
 	private static String label(GearItem item)
 	{
 		return item == null ? "" : item.label().toLowerCase(Locale.ROOT);
+	}
+
+	private static boolean isPoweredStaff(GearItem weapon)
+	{
+		String category = weapon == null ? "" : weapon.getCategory().toLowerCase(Locale.ROOT);
+		String name = label(weapon);
+		return category.contains("powered staff")
+			|| name.contains("trident")
+			|| name.contains("thammaron")
+			|| name.contains("accursed sceptre")
+			|| name.contains("sanguinesti")
+			|| name.contains("tumeken")
+			|| name.contains("warped sceptre")
+			|| name.contains("bone staff");
 	}
 
 	private static boolean isTzhaarWeapon(String name)

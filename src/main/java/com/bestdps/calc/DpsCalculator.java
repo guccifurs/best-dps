@@ -104,7 +104,7 @@ public final class DpsCalculator
 		}
 
 		long attackRoll = RollMath.attackRoll(effectiveAccuracy, loadout.getOffensive().getRanged());
-		int maxHit = RollMath.maxHitFromEffective(effectiveDamage, loadout.getBonuses().getRangedStrength());
+		int maxHit = RollMath.maxHitFromEffective(effectiveDamage, effectiveRangedStrength(loadout));
 		attackRoll = applyRangedAccuracyBonuses(request, loadout, attackRoll);
 		maxHit = applyRangedDamageBonuses(request, loadout, maxHit);
 		maxHit = applyFlatArmour(request, maxHit);
@@ -122,8 +122,9 @@ public final class DpsCalculator
 
 	private DpsResult calculateMagic(OptimizationRequest request, Loadout loadout)
 	{
-		PlayerLevels levels = request.getLevels();
-		PrayerBonuses prayers = request.getPrayers();
+		OptimizationRequest effectiveRequest = isPoweredStaff(loadout) && request.getSpell() != null ? request.withSpell(null) : request;
+		PlayerLevels levels = effectiveRequest.getLevels();
+		PrayerBonuses prayers = effectiveRequest.getPrayers();
 		int effectiveAccuracy = (int) Math.floor(levels.getMagic() * prayers.getMagicAccuracy()) + 9;
 		if (isWearingMagicVoid(loadout))
 		{
@@ -131,17 +132,18 @@ public final class DpsCalculator
 		}
 
 		long attackRoll = RollMath.attackRoll(effectiveAccuracy, loadout.getOffensive().getMagic());
-		int maxHit = magicMaxHit(request, loadout);
-		attackRoll = applyMagicAccuracyBonuses(request, loadout, attackRoll);
-		maxHit = applyMagicDamageBonuses(request, loadout, maxHit);
-		maxHit = applyFlatArmour(request, maxHit);
+		int maxHit = magicMaxHit(effectiveRequest, loadout);
+		attackRoll = applyMagicAccuracyBonuses(effectiveRequest, loadout, attackRoll);
+		maxHit = applyMagicDamageBonuses(effectiveRequest, loadout, maxHit);
+		maxHit = applyFlatArmour(effectiveRequest, maxHit);
 
-		long defenceRoll = npcDefenceRoll(request.getMonster(), "magic", loadout.getWeapon());
+		long defenceRoll = npcDefenceRoll(effectiveRequest.getMonster(), "magic", loadout.getWeapon());
 		double accuracy = RollMath.normalAccuracy(attackRoll, defenceRoll);
 		double expected = RollMath.normalExpectedHit(accuracy, maxHit);
 		int speed = attackSpeed(loadout, CombatStyle.MAGIC);
-		String spellName = request.getSpell() == null ? "" : request.getSpell().getName();
-		String attackType = spellName.isEmpty() ? "magic" : "magic: " + spellName;
+		String spellName = effectiveRequest.getSpell() == null ? "" : effectiveRequest.getSpell().getName();
+		String poweredName = spellName.isEmpty() && isPoweredStaff(loadout) && loadout.getWeapon() != null ? loadout.getWeapon().getName() : "";
+		String attackType = spellName.isEmpty() ? poweredName.isEmpty() ? "magic" : "magic: " + poweredName : "magic: " + spellName;
 		return new DpsResult(loadout, expected / (speed * RollMath.SECONDS_PER_TICK), accuracy, expected, maxHit, speed, attackType, attackRoll, defenceRoll, loadout.getCost(), spellName);
 	}
 
@@ -151,7 +153,8 @@ public final class DpsCalculator
 		String weaponName = name(weapon);
 		int magicLevel = request.getLevels().getMagic();
 		SpellStats spell = request.getSpell();
-		if (spell != null)
+		boolean poweredStaff = isPoweredStaff(loadout);
+		if (spell != null && !poweredStaff)
 		{
 			if ("Magic Dart".equals(spell.getName()))
 			{
@@ -160,7 +163,7 @@ public final class DpsCalculator
 			}
 			return spell.getMaxHit();
 		}
-		if (!isPoweredStaff(loadout))
+		if (!poweredStaff)
 		{
 			return 0;
 		}
@@ -226,6 +229,17 @@ public final class DpsCalculator
 			return "heavy";
 		}
 		return "standard";
+	}
+
+	private static int effectiveRangedStrength(Loadout loadout)
+	{
+		int rangedStrength = loadout.getBonuses().getRangedStrength();
+		GearItem ammo = loadout.get(GearSlot.AMMO);
+		if (ammo != null && ammo.getBonuses().getRangedStrength() > 0 && !RangedAmmo.strengthApplies(ammo, loadout.getWeapon()))
+		{
+			rangedStrength -= ammo.getBonuses().getRangedStrength();
+		}
+		return rangedStrength;
 	}
 
 	private static int attackSpeed(Loadout loadout, CombatStyle style)
@@ -566,8 +580,11 @@ public final class DpsCalculator
 
 	private static boolean isPoweredStaff(Loadout loadout)
 	{
-		String weaponName = name(loadout.getWeapon());
-		return weaponName.contains("trident")
+		GearItem weapon = loadout.getWeapon();
+		String weaponName = name(weapon);
+		String category = weapon == null ? "" : weapon.getCategory().toLowerCase(Locale.ROOT);
+		return category.contains("powered staff")
+			|| weaponName.contains("trident")
 			|| weaponName.contains("thammaron")
 			|| weaponName.contains("accursed sceptre")
 			|| weaponName.contains("sanguinesti")

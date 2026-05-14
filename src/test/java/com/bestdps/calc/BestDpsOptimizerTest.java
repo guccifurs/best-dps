@@ -2,6 +2,7 @@ package com.bestdps.calc;
 
 import com.bestdps.data.BestDpsData;
 import com.bestdps.data.BestDpsDataService;
+import com.bestdps.data.GearItem;
 import com.bestdps.data.GearSlot;
 import com.bestdps.data.MonsterStats;
 import java.util.Collections;
@@ -202,17 +203,19 @@ public class BestDpsOptimizerTest
 	{
 		BestDpsData data = new BestDpsDataService().load();
 		MonsterStats monster = data.searchMonsters("goblin", 1).get(0);
+		Map<Integer, Integer> owned = new HashMap<>();
+		owned.put(1381, 1);
 		OptimizationRequest request = new OptimizationRequest(
 			monster,
 			CombatStyle.MAGIC,
 			PlayerLevels.MAXED,
 			PrayerBonuses.bestAvailable(PlayerLevels.MAXED),
 			null,
-			10_000_000,
-			CandidateMode.OWNED_OR_BUDGET,
+			0,
+			CandidateMode.OWNED_ONLY,
 			false,
 			false,
-			OwnedItems.EMPTY,
+			new OwnedItems(owned, true),
 			RequirementProfile.MAXED,
 			10);
 
@@ -220,6 +223,66 @@ public class BestDpsOptimizerTest
 		Assert.assertFalse(results.isEmpty());
 		Assert.assertFalse(results.get(0).getSpellName().isEmpty());
 		Assert.assertTrue(results.get(0).getAttackType().startsWith("magic: "));
+	}
+
+	@Test
+	public void autoMagicUsesPoweredStaffAttackInsteadOfCastingSpell()
+	{
+		BestDpsData data = new BestDpsDataService().load();
+		MonsterStats monster = data.searchMonsters("goblin", 1).get(0);
+		Map<Integer, Integer> owned = new HashMap<>();
+		owned.put(27277, 1);
+		OptimizationRequest request = new OptimizationRequest(
+			monster,
+			CombatStyle.MAGIC,
+			PlayerLevels.MAXED,
+			PrayerBonuses.NONE,
+			null,
+			0,
+			CandidateMode.OWNED_ONLY,
+			false,
+			false,
+			new OwnedItems(owned, true),
+			RequirementProfile.MAXED,
+			10);
+
+		List<DpsResult> results = new BestDpsOptimizer().optimize(data, request);
+		Assert.assertFalse(results.isEmpty());
+		Assert.assertTrue(results.get(0).getLoadout().getWeapon().getName().contains("Tumeken"));
+		Assert.assertTrue(results.get(0).getSpellName().isEmpty());
+		Assert.assertEquals(34, results.get(0).getMaxHit());
+	}
+
+	@Test
+	public void thrownWeaponsDoNotBorrowProjectileAmmoStrength()
+	{
+		BestDpsData data = new BestDpsDataService().load();
+		MonsterStats monster = data.searchMonsters("goblin", 1).get(0);
+		GearItem knife = data.getGear(22804);
+		GearItem javelin = data.getGear(19484);
+		OptimizationRequest request = new OptimizationRequest(
+			monster,
+			CombatStyle.RANGED,
+			PlayerLevels.MAXED,
+			PrayerBonuses.NONE,
+			null,
+			0,
+			CandidateMode.ALL_STANDARD,
+			false,
+			false,
+			OwnedItems.EMPTY,
+			RequirementProfile.MAXED,
+			10);
+		EnumMap<GearSlot, GearItem> knifeOnly = new EnumMap<>(GearSlot.class);
+		knifeOnly.put(GearSlot.WEAPON, knife);
+		EnumMap<GearSlot, GearItem> knifeWithJavelin = new EnumMap<>(GearSlot.class);
+		knifeWithJavelin.put(GearSlot.WEAPON, knife);
+		knifeWithJavelin.put(GearSlot.AMMO, javelin);
+
+		DpsCalculator calculator = new DpsCalculator();
+		Assert.assertEquals(
+			calculator.calculate(request, new Loadout(knifeOnly)).getMaxHit(),
+			calculator.calculate(request, new Loadout(knifeWithJavelin)).getMaxHit());
 	}
 
 	@Test
