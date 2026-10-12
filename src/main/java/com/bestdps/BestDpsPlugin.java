@@ -556,7 +556,7 @@ public class BestDpsPlugin extends Plugin
 			}
 			if (launcherPanel != null)
 			{
-				launcherPanel.updateBankStatus(scanned);
+				launcherPanel.updateBankStatus(scanned, observedItems, fresh, updatedAt);
 			}
 		});
 	}

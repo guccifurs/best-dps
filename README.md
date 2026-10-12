@@ -11,27 +11,29 @@ raid, combat, level, prayer and budget assumptions.
    after changing bank contents on another client.
 2. Search by NPC name or ID and choose its variant. For changing protection prayers,
    choose the style for the vulnerable phase.
-3. Under **Gear**, choose owned-only, owned plus cash, or a shopping budget. Cash
+3. Under **Build from**, choose owned gear, owned gear plus cash, or buying a setup. Cash
    means the amount available to spend, excluding possible gear-sale proceeds.
    `k`, `m` and `b` suffixes work, up to 2,147,483,647 cash GP.
-4. Under **Encounter**, set ToA invocation/path levels, party size, CoX challenge
+4. Expand **Encounter settings** for ToA invocation/path levels, party size, CoX challenge
    mode and party stats, target HP, or remaining Defence after a drain.
-5. Under **Effects**, set player HP, Soulreaper stacks, Mark of Darkness, Kandarin
+5. Expand **Combat effects** for player HP, Soulreaper stacks, Mark of Darkness, Kandarin
    diary and Wilderness state. Live HP and actual prayer unlocks are read on the
    client thread when using your character's levels.
-6. Press **Find**. The result shows the target, damage, accuracy, setup, elapsed
-   search time and any assumptions. **Cancel**, another search, logout or an
-   account change cancels obsolete work.
+6. Press **Find best gear** or **Ctrl+Enter**. Ranked alternatives sit beside the
+   selected equipment setup. Use **Equipment**, **Trade plan** and **Assumptions**
+   to inspect each result. Changing inputs marks old results as stale and cancels
+   obsolete work; **Cancel**, logout and account changes also stop searches.
+   **Ctrl+L** focuses the target search.
 
-**Use my levels** and **Include Untradeables** default on. Untradeables must actually
+**Use my levels & unlocks** and **Include owned untradeables** default on. Untradeables must actually
 have been observed on your account. Notes are converted to item IDs; placeholders
 are excluded. A restored bank cache is labelled separately from a bank read this
 session.
 
 ## Optional selling
 
-**Suggest selling unused gear** defaults off and is saved as a plugin setting.
-It applies to **Owned + budget gear** and requires a bank read this session.
+**Allow gear sales** defaults off and is saved as a plugin setting.
+It applies to **Owned gear + cash** and requires a bank read this session.
 
 When enabled, the search compares against a separate no-sale baseline. It only
 shows a sale-funded setup when its DPS exceeds the best no-sale result found.
@@ -98,5 +100,5 @@ source attribution and data licensing are documented in the coverage notes.
 ./gradlew jar
 ```
 
-Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.2.0.jar`.
+Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.3.0.jar`.
 Building does not publish a Plugin Hub update or prove in-game behaviour.
