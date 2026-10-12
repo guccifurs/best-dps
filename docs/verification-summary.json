@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-12",
+  "version": "0.5.0",
+  "wikiRevision": "89c3e25b344aea90d0189746e4b5f73dde0f0383",
+  "combatInsightRevision": "98e49fd2c18534f376b1004a8adf1b3aec1c4813",
+  "catalog": {
+    "fixtures": 8580,
+    "npc_variants": 2860,
+    "results": {
+      "dps_match": 8245,
+      "unsupported_explicitly_blocked": 243,
+      "dps_difference": 92
+    },
+    "matching_dps_diagnostic_differences": {
+      "accuracy": 199,
+      "attackRoll": 196,
+      "defenceRoll": 196,
+      "speed": 55
+    }
+  },
+  "mechanics": {
+    "fixtures": 11230,
+    "npc_variants": 52,
+    "results": {
+      "dps_match": 10347,
+      "dps_difference": 483,
+      "unsupported_explicitly_blocked": 400
+    },
+    "matching_dps_diagnostic_differences": {
+      "accuracy": 648,
+      "attackRoll": 650,
+      "defenceRoll": 643,
+      "speed": 454,
+      "expected": 5
+    }
+  },
+  "external": {
+    "fixtures": 5,
+    "npc_variants": 2,
+    "results": {
+      "dps_match": 5
+    },
+    "matching_dps_diagnostic_differences": {}
+  },
+  "explainedDifferences": {
+    "catalog": {
+      "warriors_guild_melee_only": 14,
+      "cave_kraken_no_melee": 1,
+      "warden_active_melee_protection": 2,
+      "fareed_melee_ice_gloves": 1,
+      "titan_elemental_success_required": 2,
+      "quest_flower_not_one_hit": 3,
+      "olm_head_unreachable": 1,
+      "nylocas_hagios_magic_only": 8,
+      "nylocas_ischyros_melee_only": 8,
+      "prinkipas_magic": 2,
+      "prinkipas_melee": 2,
+      "prinkipas_ranged": 2,
+      "nylocas_toxobolos_ranged_only": 8,
+      "respiratory_halberd_reach": 1,
+      "salarin_strikes_only": 3,
+      "nmz_slagilith_pickaxe_reduction": 6,
+      "sleepwalker_kill_action": 21,
+      "sire_spawn_demonbane_accuracy": 3,
+      "nightmare_totem_double_magic": 2,
+      "void_flare_melee_not_guaranteed": 2
+    },
+    "mechanics": {
+      "wiki_atlatl_quiver_passive": 47,
+      "wiki_dynamic_magic_dart_zero_uplift": 92,
+      "wiki_karil_amulet_name_case": 96,
+      "warden_active_melee_protection": 108,
+      "void_flare_guarantee_style_restriction": 140
+    },
+    "unclassified": 0
+  },
+  "externalFormulaChecks": 4698,
+  "targetedTests": [
+    {
+      "name": "com.bestdps.calc.CombatReferenceRegressionTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.bestdps.calc.EncounterReferenceRulesTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.bestdps.calc.OptimizerReferenceAmmoTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.bestdps.calc.OptimizerReferenceBudgetTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.bestdps.calc.OptimizerReferenceCoverageTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.bestdps.calc.OptimizerReferenceEnumerationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "externalScreenValues": [
+    {
+      "key": "gearscape-whip-none",
+      "dps": 1.0738286663150445,
+      "max": 25,
+      "accuracy": 0.20554266496337045
+    },
+    {
+      "key": "gearscape-whip-piety",
+      "dps": 1.5138921243854777,
+      "max": 30,
+      "accuracy": 0.24170294861433375
+    },
+    {
+      "key": "gearscape-bow-rigour",
+      "dps": 2.676820204939133,
+      "max": 23,
+      "accuracy": 0.41746798864032686
+    },
+    {
+      "key": "gearscape-trident-augury",
+      "dps": 0.6630956732018031,
+      "max": 29,
+      "accuracy": 0.10950203777644454
+    },
+    {
+      "key": "bitterkoekje-scythe",
+      "dps": 10.967143745841938,
+      "max": 88,
+      "accuracy": 0.7454790520049421
+    }
+  ]
+}

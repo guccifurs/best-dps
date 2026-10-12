@@ -54,16 +54,16 @@ missing. This is a recommendation list: the plugin never places trades.
 ## Search and coverage
 
 The engine indexes candidates once per style, preserves meaningful set pieces,
-seeds complete sets, filters ammunition for each weapon, and uses bounded
-multi-start coordinate improvement plus two-slot budget exchanges. Search work
+seeds complete sets, filters ammunition for each weapon, and fully enumerates
+eligible gear pools whose combination bound is at most 20,000. Larger searches use
+bounded multi-start coordinate improvement plus two-slot budget exchanges. Search work
 is cancellable and runs away from the client/UI threads.
 
-Measured on the development machine using the bundled dataset (12 October 2026):
-an owned-only, all-style search took 22 ms; a 100m ranged Vorkath search took
-665 ms; an all-style resale search, including its no-sale comparison, took
-4.85 seconds. The resale example improved estimated DPS from 8.536 to 8.992
-while requiring 99.40m cash. These are sample timings, not limits for every bank
-or target.
+Version 0.5.0 reference checks and measured search times are in
+[verification results](docs/verification-results.md) and
+[optimizer verification](docs/optimizer-verification.md). An illustrative owned-bank
+search took 145 ms; a full-catalogue, all-style Zulrah search took 6.07 seconds on
+the development machine. These are sample timings, not guarantees for every bank.
 
 Results are labelled **best found · not proven BiS**, not a mathematically exhaustive optimum.
 NPC data coverage is not the same as verified mechanics coverage. Ordinary attacks,
@@ -100,5 +100,5 @@ source attribution and data licensing are documented in the coverage notes.
 ./gradlew jar
 ```
 
-Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.4.0.jar`.
+Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.5.0.jar`.
 Building does not publish a Plugin Hub update or prove in-game behaviour.

@@ -22,6 +22,7 @@ public final class CombatMechanics
 			warnings.add("Charge this weapon before use. Displayed DPS assumes a usable charged weapon; charging supplies and recurring costs are excluded.");
 		}
 		if (name.contains("blowpipe")) warnings.add("Ammo row shows loaded darts; scales and recurring ammunition costs are excluded.");
+		if (wears(loadout, "amulet of avarice")) warnings.add("Amulet of avarice assumes its normal 20% revenant bonus; Forinthry Surge is not active in this estimate.");
 		if (name.contains("venator")) warnings.add("Single-target DPS: Venator ricochets require extra nearby targets and are excluded.");
 		if (name.contains("chinchompa")) warnings.add("Chinchompa DPS assumes optimal distance for the selected fuse; nearby targets are excluded.");
 		if (name.contains("eclipse atlatl") && wears(loadout, "eclipse moon chestplate") && wears(loadout, "eclipse moon tassets") && wears(loadout, "eclipse moon helm"))

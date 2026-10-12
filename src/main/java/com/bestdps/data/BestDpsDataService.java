@@ -161,6 +161,33 @@ public final class BestDpsDataService
 				phases.add(monster.withVersion("Normal, tank uses melee/ranged").withMagicDefenceBonus(-30));
 				phases.add(monster.withVersion("Normal, tank uses magic").withMagicDefenceBonus(60));
 			}
+			else if (monster.normalizedName().equals("jhallan") && monster.getVersion().isEmpty())
+			{
+				phases.add(monster.withVersion(monster.getHitpoints() == 1 ? "Clone" : "Main opponent"));
+			}
+			else if (monster.getId() == 12596 || monster.getId() == 14147)
+			{
+				phases.add(monster.withVersion("Melee range"));
+				phases.add(monster.withVersion("Out of melee range"));
+				phases.add(monster.withVersion("Elemental blast"));
+			}
+			else if (monster.getId() == 5914)
+			{
+				phases.add(monster.withVersion("Stunned"));
+				phases.add(monster.withVersion("Protected"));
+			}
+			else if (monster.getId() == 14179)
+			{
+				phases.add(monster);
+				phases.add(monster.withVersion(monster.getVersion() + ", Bloodied Blows"));
+				if (monster.normalizedVersion().equals("shadow"))
+				{
+					phases.add(monster.withVersion("Shadow, phase 3").withCombatStats(71, monster.getDefence(), monster.getMagic()));
+					phases.add(monster.withVersion("Shadow, phase 3, Divine Severance/Familiar Acquisition")
+						.withCombatStats(81, monster.getDefence(), monster.getMagic()));
+					phases.add(monster.withVersion("Shadow, phase 3, Bloodied Blows").withCombatStats(71, monster.getDefence(), monster.getMagic()));
+				}
+			}
 			else
 			{
 				phases.add(monster);

@@ -54,7 +54,8 @@ public final class EncounterRules
 		}
 		else if (isTombsOfAmascut(monster))
 		{
-			boolean core = monster.normalizedVersion().contains("core-ejected");
+			boolean core = isWardenCore(monster);
+			if (core) { hp = 4500; }
 			hp = percent(hp, c.getRaidLevel() * (core ? 1 : 4) / 10);
 			boolean path = !name.contains("warden") && !name.startsWith("obelisk");
 			if (path && c.getPathLevel() > 0)
@@ -178,8 +179,9 @@ public final class EncounterRules
 
 	public static long defenceRoll(MonsterStats monster, EncounterContext context, long baseRoll)
 	{
-		return isTombsOfAmascut(monster)
-			? baseRoll * (100 + context.getRaidLevel() * 4 / 10) / 100 : baseRoll;
+		int id = monster.getId();
+		return isTombsOfAmascut(monster) && id != 11724 && id != 11725 && id != 11726
+			? baseRoll * (250L + context.getRaidLevel()) / 250 : baseRoll;
 	}
 
 	public static int magicDefenceLevel(MonsterStats monster)
@@ -202,19 +204,94 @@ public final class EncounterRules
 		return monster.getId() == 11755 || monster.getId() == 11758;
 	}
 
+	/** Successful hits which bypass the ordinary uniform damage distribution. */
+	public static boolean guaranteedMaximumHit(MonsterStats monster, Loadout loadout, String type)
+	{
+		int id = monster.getId();
+		boolean melee = isMelee(type);
+		boolean magic = type.equals("magic");
+		boolean ranged = type.startsWith("ranged");
+		if (id == 14180 || isWardenCore(monster) && melee) { return true; }
+		if (id == 14179 && !monster.normalizedVersion().contains("bloodied blows"))
+		{
+			return magic || ranged && isStandardRanged(loadout);
+		}
+		if (id == 14150 || id == 14151) { return magic; }
+		if (id == 9466 || id == 9467 || id == 9469) { return type.equals("crush"); }
+		if (id == 12814 || id == 11710 || id == 11713) { return melee; }
+		if (id == 12815 || id == 11711 || id == 11714 || id == 11715 || id == 11717) { return ranged; }
+		if (id == 12816 || id == 11709 || id == 11712) { return magic; }
+		if (id == 13671 || id == 13675)
+		{
+			if (weaponName(loadout).equals("noxious halberd")) { return true; }
+			int physical = Math.max(loadout.getOffensive().getStab(), Math.max(loadout.getOffensive().getSlash(), loadout.getOffensive().getCrush()));
+			if (type.equals("crush"))
+			{
+				return dominantCrush(loadout, type) && physical > loadout.getOffensive().getRanged()
+					&& physical > loadout.getOffensive().getMagic();
+			}
+			return ranged && (weaponName(loadout).contains("crossbow") || weaponName(loadout).contains("ballista"))
+				&& loadout.getOffensive().getRanged() > physical && loadout.getOffensive().getRanged() > loadout.getOffensive().getMagic();
+		}
+		return false;
+	}
+
+	private static boolean isStandardRanged(Loadout loadout)
+	{
+		String weapon = weaponName(loadout);
+		String category = loadout.getWeapon() == null ? "" : loadout.getWeapon().getCategory().toLowerCase(Locale.ROOT);
+		return !category.contains("thrown") && !category.contains("crossbow") && !category.contains("chinchompa")
+			&& !weapon.contains("ballista") && !weapon.contains("blowpipe") && !weapon.contains("salamander");
+	}
+
+	public static int minimumHit(MonsterStats monster, Loadout loadout, String attackType, int maxHit)
+	{
+		return monster.getId() == 5914 ? maxHit / 2 : 0;
+	}
+
+	/** HP damage on a successful hit; -1 means normal damage. Quest Hespori flowers are not one-hit. */
+	public static int instantKillHit(MonsterStats monster, Loadout loadout, String attackType, SpellStats spell)
+	{
+		int id = monster.getId();
+		return id == 7223 || id == 8584 || id == 5914 && isDemonbane(loadout, attackType, spell) && !weaponName(loadout).equals("holy water")
+			? monster.getHitpoints() : -1;
+	}
+
 	public static double forcedAccuracy(MonsterStats monster, Loadout loadout, String attackType, double accuracy)
 	{
+		return forcedAccuracy(monster, loadout, attackType, null, accuracy);
+	}
+
+	public static double forcedAccuracy(MonsterStats monster, Loadout loadout, String attackType, SpellStats spell, double accuracy)
+	{
+		int id = monster.getId();
+		if ((id == 14150 || id == 14151) && attackType.equals("magic"))
+		{
+			if (spell != null && spell.getName().equals("Wind Strike")) { return 1.0; }
+			int bonus = loadout.getOffensive().getMagic();
+			if (spell == null && weaponName(loadout).equals("tumeken's shadow")) { bonus *= 3; }
+			double chance = Math.max(0, bonus) / 100.0 + 0.3;
+			if (itemName(loadout.get(GearSlot.HEAD)).startsWith("void mage helm")
+				&& itemName(loadout.get(GearSlot.BODY)).contains("void") && itemName(loadout.get(GearSlot.LEGS)).contains("void")
+				&& itemName(loadout.get(GearSlot.HANDS)).startsWith("void knight gloves")) { chance *= 1.45; }
+			return Math.min(1.0, chance);
+		}
+		if (guaranteedMaximumHit(monster, loadout, attackType) || id == 8584 || id == 7223
+			|| id == 5916 && isDemonbane(loadout, attackType, spell)) { return 1.0; }
 		if (monster.normalizedName().equals("verzik vitur") && monster.normalizedVersion().contains("phase 1")
-			&& attackType.equals("magic") && weaponName(loadout).equals("dawnbringer"))
-		{
-			return 1.0;
-		}
+			&& attackType.equals("magic") && weaponName(loadout).equals("dawnbringer")) { return 1.0; }
 		if (monster.normalizedName().equals("tormented demon") &&
-			(monster.normalizedVersion().contains("defenceless") || monster.normalizedVersion().contains("unshielded")))
-		{
-			return 1.0;
-		}
+			(monster.normalizedVersion().contains("defenceless") || monster.normalizedVersion().contains("unshielded"))) { return 1.0; }
 		return accuracy;
+	}
+
+	public static boolean isDemonbane(Loadout loadout, String type, SpellStats spell)
+	{
+		String weapon = weaponName(loadout);
+		return isMelee(type) && (weapon.contains("silverlight") || weapon.contains("darklight") || weapon.contains("arclight")
+			|| weapon.contains("emberlight") || weapon.contains("burning claws") || weapon.contains("bone claws"))
+			|| type.startsWith("ranged") && (weapon.contains("scorching bow") || weapon.equals("holy water"))
+			|| type.equals("magic") && spell != null && spell.getName().contains("Demonbane");
 	}
 
 	public static double missDamage(MonsterStats monster, Loadout loadout, String attackType)
@@ -244,6 +321,12 @@ public final class EncounterRules
 		return tormentedBonusApplies(monster, loadout, attackType, spell) ? Math.max(0, speed * speed - 16) : 0;
 	}
 
+	public static int attackRollMultiplier(MonsterStats monster, String attackType)
+	{
+		return (monster.getId() == 12596 || monster.getId() == 14147) && attackType.startsWith("ranged")
+			&& (monster.normalizedVersion().equals("out of melee range") || monster.normalizedVersion().equals("elemental blast")) ? 6 : 1;
+	}
+
 	public static int attackSpeed(MonsterStats monster, Loadout loadout, String attackType, SpellStats spell, int speed)
 	{
 		return tormentedBonusApplies(monster, loadout, attackType, spell) && speed > 4 ? 4 : speed;
@@ -259,7 +342,7 @@ public final class EncounterRules
 		String name = monster.normalizedName();
 		if (style == CombatStyle.ANY && (name.equals("akkha") || name.equals("nylocas vasilias")
 			|| name.equals("nylocas prinkipas") || name.equals("demonic gorilla") || name.equals("tormented demon")
-			|| isWardenPhaseTwo(monster)))
+			|| monster.getId() == 14180 || isWardenPhaseTwo(monster)))
 		{
 			return "This NPC changes protection. Choose the style for its vulnerable phase and search each phase separately.";
 		}
@@ -275,13 +358,19 @@ public final class EncounterRules
 			return "This target has incomplete combat data; no reliable gear ranking is available.";
 		}
 		if (version.contains("invulnerable") || version.contains("immune") || version.equals("whirlpool")
-			|| version.equals("teleporting") || name.endsWith("portal shield"))
+			|| version.equals("teleporting") || version.equals("submerged") || name.endsWith("portal shield")
+			|| name.equals("portal (pest control)") && version.contains("shielded") || monster.getId() == 5912
+			|| name.equals("respiratory system") && version.contains("protected"))
 		{
 			return "This target cannot take ordinary damage in the selected phase. Choose its attackable variant.";
 		}
 		if (name.equals("phantom muspah") && version.equals("shielded"))
 		{
 			return "Muspah's prayer shield needs prayer-drain, Smite and sapphire-bolt modelling; ranking is unavailable.";
+		}
+		if (name.equals("maggot king") || name.equals("mad angel"))
+		{
+			return "This boss has counterattack or burn rules not yet verified in this model; gear ranking is unavailable.";
 		}
 		if (name.contains("tanglefoot") || name.equals("zalcano") || name.equals("hespori (echo)"))
 		{
@@ -303,7 +392,7 @@ public final class EncounterRules
 		{
 			return "Attack the respiratory systems in phase 1; select an attackable Sire phase for a damage comparison.";
 		}
-		if (monster.hasAttribute("penance") || name.contains("hunllef") || name.contains("(pvm arena)")
+		if (monster.hasAttribute("penance") || monster.getId() >= 9026 && monster.getId() <= 9048 || name.contains("hunllef") || name.contains("(pvm arena)")
 			|| version.contains("deadman") || name.contains("(deadman)") || name.contains("(echo)"))
 		{
 			return "This activity has restricted equipment, calls or mode modifiers outside the normal bank-gear model.";
@@ -328,6 +417,21 @@ public final class EncounterRules
 		boolean melee = isMelee(attackType);
 		boolean magic = attackType.equals("magic");
 		boolean ranged = attackType.startsWith("ranged");
+		if (magic && spell != null)
+		{
+			if (spell.getName().equals("Crumble Undead") && !monster.hasAttribute("undead"))
+			{
+				return "Crumble Undead can only target undead creatures.";
+			}
+			if (spell.getName().contains("Demonbane") && !monster.hasAttribute("demon"))
+			{
+				return "Demonbane spells can only target demons.";
+			}
+		}
+		if (!monster.hasAttribute("rat") && (weapon.equals("bone mace") || weapon.equals("bone shortbow") || weapon.equals("bone staff")))
+		{
+			return "Rat bone weapons can only attack rats, including manual spells cast with the bone staff.";
+		}
 		if ((name.equals("tekton") || name.equals("glowing crystal")) && ranged)
 		{
 			return "This target is immune to ranged damage.";
@@ -356,6 +460,10 @@ public final class EncounterRules
 				return "Wear ice gloves to keep a melee weapon equipped against Fareed.";
 			}
 		}
+		if ((id == 12596 || id == 14147) && monster.normalizedVersion().equals("out of melee range") && melee)
+		{
+			return "This Titan is outside melee range in the selected phase.";
+		}
 		if (name.equals("dusk") && !melee)
 		{
 			return "Dusk is immune to ranged and magic damage.";
@@ -364,7 +472,7 @@ public final class EncounterRules
 		{
 			return "Guardians require melee attacks with a pickaxe.";
 		}
-		if (name.equals("zulrah") && melee && !weapon.contains("halberd"))
+		if ((name.equals("zulrah") || monster.getId() == 5914) && melee && !weapon.contains("halberd"))
 		{
 			return "This target is out of reach of ordinary melee weapons.";
 		}
@@ -386,10 +494,6 @@ public final class EncounterRules
 		{
 			return "The Warden's active phase must be attacked with the unprotected ranged or magic style.";
 		}
-		if (isWardenCore(monster) && !melee)
-		{
-			return "Select melee for the Warden core's guaranteed maximum-hit comparison.";
-		}
 		if (monster.hasAttribute("leafy"))
 		{
 			GearItem ammo = loadout.get(GearSlot.AMMO);
@@ -410,6 +514,14 @@ public final class EncounterRules
 		{
 			return "This vampyre requires silver weaponry or Efaritay's aid.";
 		}
+		if (name.equals("nylocas prinkipas"))
+		{
+			String phase = monster.normalizedVersion();
+			if (phase.equals("magic") && !magic || phase.equals("ranged") && !ranged || phase.equals("melee") && !melee)
+			{
+				return "This Nylocas reflects and heals from attacks outside its selected vulnerable style.";
+			}
+		}
 		if (name.startsWith("nylocas ischyros") && !melee || name.startsWith("nylocas toxobolos") && !ranged
 			|| name.startsWith("nylocas hagios") && !magic)
 		{
@@ -428,7 +540,8 @@ public final class EncounterRules
 			|| name.equals("tormented demon") || name.equals("the hueycoatl")
 			|| name.equals("guardian (chambers of xeric)") || name.equals("fragment of seren") || name.equals("glowing crystal")
 			|| name.equals("verzik vitur") && monster.normalizedVersion().contains("phase 1")
-			|| monster.hasAttribute("vampyre2");
+			|| monster.hasAttribute("vampyre2") || name.equals("zogre") || name.equals("skogre") || name.equals("slash bash")
+			|| name.startsWith("sleepwalker");
 	}
 
 	/** Salarin's successful strike uses the highest unlocked bolt tier, ignoring normal damage gear. */
@@ -513,6 +626,18 @@ public final class EncounterRules
 	private static IntToDoubleFunction hitModifier(MonsterStats monster, Loadout loadout, String attackType, SpellStats spell)
 	{
 		String name = monster.normalizedName();
+		if (name.startsWith("sleepwalker"))
+		{
+			int hp = monster.getHitpoints();
+			return damage -> damage > 0 ? hp : 0;
+		}
+		if (name.equals("zogre") || name.equals("skogre") || name.equals("slash bash"))
+		{
+			if (attackType.startsWith("ranged") && weaponName(loadout).equals("comp ogre bow")
+				&& itemName(loadout.get(GearSlot.AMMO)).endsWith("brutal")) { return UNCHANGED_HIT; }
+			int divisor = attackType.equals("magic") && spell != null && spell.getName().equals("Crumble Undead") ? 2 : 4;
+			return damage -> damage / divisor;
+		}
 		if (name.equals("vorkath") && monster.normalizedVersion().contains("acid attack"))
 		{
 			return damage -> damage / 2;
@@ -538,7 +663,7 @@ public final class EncounterRules
 				|| weapon.contains("burning claws") || weapon.contains("bone claws"))
 				|| attackType.startsWith("ranged") && weapon.contains("scorching bow")
 				|| attackType.equals("magic") && spell != null && spell.getName().contains("Demonbane");
-			return bypass ? UNCHANGED_HIT : damage -> Math.max(1, damage * 4 / 5);
+			return bypass ? UNCHANGED_HIT : damage -> damage == 0 ? 0 : Math.max(1, damage * 4 / 5);
 		}
 		if (name.equals("the hueycoatl"))
 		{
@@ -577,29 +702,30 @@ public final class EncounterRules
 			GearItem weapon = loadout.getWeapon();
 			String weaponName = weaponName(loadout);
 			boolean corpbane = attackType.equals("stab") && weapon != null
-				&& (weaponName.equals("sunspear") || weapon.isTwoHanded()
+				&& (weaponName.equals("sunspear") || weaponName.startsWith("osmumten's fang")
+					|| weaponName.equals("thunder khopesh") || weaponName.equals("king's barrage") || weapon.isTwoHanded()
 					&& (weapon.getCategory().equalsIgnoreCase("spear") || weaponName.contains("halberd")));
 			return corpbane ? UNCHANGED_HIT : damage -> damage / 2;
 		}
 		if (name.equals("great olm"))
 		{
 			String phase = monster.normalizedVersion();
-			boolean correct = phase.contains("head") && attackType.startsWith("ranged")
-				|| phase.contains("left claw") && isMelee(attackType)
-				|| phase.contains("right claw") && attackType.equals("magic");
-			return correct ? UNCHANGED_HIT : damage -> damage / 3;
+			boolean reduced = attackType.equals("magic") && (phase.contains("head") || phase.contains("left claw"))
+				|| attackType.startsWith("ranged") && phase.contains("claw");
+			return reduced ? damage -> damage / 3 : UNCHANGED_HIT;
 		}
 		if (name.equals("tekton") && attackType.equals("magic"))
 		{
-			return damage -> damage / 5;
+			return damage -> damage == 0 ? 0 : Math.max(1, damage / 5);
 		}
-		if (name.equals("ice demon") && !(attackType.equals("magic") && spell != null && spell.getElement().equals("fire")))
+		if (name.equals("ice demon") && !(attackType.equals("magic") && spell != null && spell.getElement().equals("fire"))
+			&& !isDemonbane(loadout, attackType, spell))
 		{
 			return damage -> damage / 3;
 		}
 		if ((name.equals("kraken") || name.equals("cave kraken")) && attackType.startsWith("ranged"))
 		{
-			return damage -> Math.max(1, damage / 7);
+			return damage -> damage == 0 ? 0 : Math.max(1, damage / 7);
 		}
 		if (name.startsWith("totem (") && attackType.equals("magic"))
 		{
@@ -641,7 +767,7 @@ public final class EncounterRules
 		{
 			warnings.add("ToB party size changes HP only; select the correct Entry, Normal or Hard variant.");
 		}
-		if (name.equals("akkha") || name.equals("nylocas vasilias") || name.equals("nylocas prinkipas") || name.equals("demonic gorilla"))
+		if (name.equals("akkha") || name.equals("nylocas vasilias") || name.equals("nylocas prinkipas") || name.equals("demonic gorilla") || monster.getId() == 14180)
 		{
 			warnings.add("Assumes this style is currently unprotected; search each vulnerable style separately. Final/transition phases are excluded.");
 		}
@@ -672,6 +798,38 @@ public final class EncounterRules
 		if (name.equals("guardian (chambers of xeric)"))
 		{
 			warnings.add("Guardian damage uses your base Mining and equipped pickaxe; temporary Mining boosts are excluded. HP scaling assumes party average Mining 99.");
+		}
+		if (monster.getId() == 12596 || monster.getId() == 14147)
+		{
+			warnings.add("Select the Titan's current position or Elemental blast. Retreating and blast phases multiply ranged accuracy rolls by six; phase uptime is excluded.");
+		}
+		if (monster.getId() == 14150 || monster.getId() == 14151)
+		{
+			warnings.add("Elemental magic accuracy uses equipment bonus plus 30%, with a 30% floor; Wind Strike always hits. Successful magic hits deal maximum damage.");
+		}
+		if (monster.getId() == 5914)
+		{
+			warnings.add("Assumes Sire is stunned. Respiratory systems require ranged, magic or a halberd; successful hits deal at least half maximum, and demonbane instantly kills. Regeneration is excluded.");
+		}
+		if (monster.getId() == 14179)
+		{
+			warnings.add("Void Flare demonbane vulnerability is 200%; magic and standard ranged guarantee maximum damage except under Bloodied Blows. Select normal, phase-3 or contract HP explicitly.");
+		}
+		if (monster.getId() == 9468)
+		{
+			warnings.add("An unweakened parasite gains the damage dealt when it emerges as extra HP; this comparison uses only its base HP.");
+		}
+		if (name.startsWith("sleepwalker") || monster.getId() == 7223 || monster.getId() == 8584)
+		{
+			warnings.add("This add dies on one successful damaging hit. The shown rate compares kill actions, not ordinary repeatable damage to a boss.");
+		}
+		if (monster.getId() == 7223)
+		{
+			warnings.add("Rat bone weapons have no cooldown against Scurrius rats; their target-switch timing is not simulated.");
+		}
+		if (name.equals("jhallan"))
+		{
+			warnings.add("Main opponent and one-HP clones share an NPC ID but have different stats. Select the correct form; this quest encounter ends by surviving its mechanics, not ordinary kill time.");
 		}
 		if (name.equals("salarin the twisted"))
 		{
@@ -738,7 +896,7 @@ public final class EncounterRules
 		return type.equals("stab") || type.equals("slash") || type.equals("crush");
 	}
 
-	private static boolean isSilverWeapon(Loadout loadout, String type)
+	public static boolean isSilverWeapon(Loadout loadout, String type)
 	{
 		String weapon = weaponName(loadout);
 		if (isMelee(type))

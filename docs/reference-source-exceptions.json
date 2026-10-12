@@ -1,0 +1,270 @@
+{
+  "referenceRevision": "89c3e25b344aea90d0189746e4b5f73dde0f0383",
+  "verifiedDate": "2026-10-12",
+  "scope": "Classification of bare whip, magic shortbow/rune arrows and fire staff/Fire Wave catalog fixtures. These are explanations, not blanket waivers for arbitrary gear, spells or phases. Require matching expected behavior before accepting a mismatch.",
+  "exceptions": [
+    {
+      "code": "warriors_guild_melee_only",
+      "npcIds": [
+        2450,
+        2451,
+        2452,
+        2453,
+        2454,
+        2455,
+        2456
+      ],
+      "styles": [
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Plugin rejects non-melee guild fights.",
+      "source": "https://oldschool.runescape.wiki/w/Warriors%27_Guild"
+    },
+    {
+      "code": "cave_kraken_no_melee",
+      "npcIds": [
+        492
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Plugin rejects unreachable melee.",
+      "source": "https://oldschool.runescape.wiki/w/Cave_kraken"
+    },
+    {
+      "code": "warden_active_melee_protection",
+      "npcIds": [
+        11753,
+        11754,
+        11756,
+        11757
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Plugin rejects melee while both active Wardens pray against it.",
+      "source": "https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies"
+    },
+    {
+      "code": "fareed_melee_ice_gloves",
+      "npcIds": [
+        3456
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Bare whip fixture lacks the ice gloves needed to retain its weapon.",
+      "source": "https://oldschool.runescape.wiki/w/Fareed"
+    },
+    {
+      "code": "titan_elemental_success_required",
+      "npcIds": [
+        14150,
+        14151
+      ],
+      "styles": [
+        "MAGIC"
+      ],
+      "reason": "Successful hits max; the oracle incorrectly discards its own nonunit accuracy in final damage.",
+      "source": "https://oldschool.runescape.wiki/w/Fire_elemental_(Royal_Titans)"
+    },
+    {
+      "code": "quest_flower_not_one_hit",
+      "npcIds": [
+        11193
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Quest flowers explicitly do not always die in one hit.",
+      "source": "https://oldschool.runescape.wiki/w/Flower_(A_Night_at_the_Theatre)"
+    },
+    {
+      "code": "olm_head_unreachable",
+      "npcIds": [
+        7551
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Plugin rejects melee to the head.",
+      "source": "https://oldschool.runescape.wiki/w/Great_Olm"
+    },
+    {
+      "code": "nylocas_hagios_magic_only",
+      "npcIds": [
+        8344,
+        8347,
+        10776,
+        10779
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED"
+      ],
+      "reason": "Magic Nylocas immune to other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Hagios"
+    },
+    {
+      "code": "nylocas_ischyros_melee_only",
+      "npcIds": [
+        8342,
+        8345,
+        10774,
+        10777
+      ],
+      "styles": [
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Melee Nylocas immune to other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Ischyros"
+    },
+    {
+      "code": "nylocas_toxobolos_ranged_only",
+      "npcIds": [
+        8343,
+        8346,
+        10775,
+        10778
+      ],
+      "styles": [
+        "MELEE",
+        "MAGIC"
+      ],
+      "reason": "Ranged Nylocas immune to other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Toxobolos"
+    },
+    {
+      "code": "prinkipas_magic",
+      "npcIds": [
+        10805
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED"
+      ],
+      "reason": "Magic form reflects and heals from other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Prinkipas"
+    },
+    {
+      "code": "prinkipas_melee",
+      "npcIds": [
+        10803
+      ],
+      "styles": [
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Melee form reflects and heals from other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Prinkipas"
+    },
+    {
+      "code": "prinkipas_ranged",
+      "npcIds": [
+        10806
+      ],
+      "styles": [
+        "MELEE",
+        "MAGIC"
+      ],
+      "reason": "Ranged form reflects and heals from other styles.",
+      "source": "https://oldschool.runescape.wiki/w/Nylocas_Prinkipas"
+    },
+    {
+      "code": "respiratory_halberd_reach",
+      "npcIds": [
+        5914
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Bare whip fixture cannot reach respiratory systems. Halberds may.",
+      "source": "https://oldschool.runescape.wiki/w/Respiratory_system"
+    },
+    {
+      "code": "salarin_strikes_only",
+      "npcIds": [
+        304
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Only strike spells can damage Salarin; Fire Wave fixture is invalid.",
+      "source": "https://oldschool.runescape.wiki/w/Salarin_the_twisted"
+    },
+    {
+      "code": "nmz_slagilith_pickaxe_reduction",
+      "npcIds": [
+        6324,
+        6385
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "NMZ variants retain the non-pickaxe damage reduction.",
+      "source": "https://oldschool.runescape.wiki/w/Slagilith_(Nightmare_Zone)"
+    },
+    {
+      "code": "sleepwalker_kill_action",
+      "npcIds": [
+        9446,
+        9447,
+        9448,
+        9449,
+        9450,
+        9451,
+        9470
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Any positive damage kills the ten-HP add; plugin reports HP removed per kill action, oracle ordinary uncapped damage.",
+      "source": "https://oldschool.runescape.wiki/w/Sleepwalker_(monster)"
+    },
+    {
+      "code": "sire_spawn_demonbane_accuracy",
+      "npcIds": [
+        5916
+      ],
+      "styles": [
+        "MELEE",
+        "RANGED",
+        "MAGIC"
+      ],
+      "reason": "Only demonbane weapons receive guaranteed accuracy; baseline whip/bow/Fire Wave do not.",
+      "source": "https://oldschool.runescape.wiki/w/Spawn"
+    },
+    {
+      "code": "nightmare_totem_double_magic",
+      "npcIds": [
+        9436
+      ],
+      "styles": [
+        "MAGIC"
+      ],
+      "reason": "Totems take double magic damage; oracle ID list omits9436.",
+      "source": "https://oldschool.runescape.wiki/w/Totem_(The_Nightmare)"
+    },
+    {
+      "code": "void_flare_melee_not_guaranteed",
+      "npcIds": [
+        14179
+      ],
+      "styles": [
+        "MELEE"
+      ],
+      "reason": "Maximum guaranteed only for magic and standard ranged, absent Bloodied Blows.",
+      "source": "https://oldschool.runescape.wiki/w/Void_Flare"
+    }
+  ]
+}

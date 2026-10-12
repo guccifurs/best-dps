@@ -43,7 +43,20 @@ public final class RollMath
 
 	public static int effectiveLevel(int level, double prayer, int stanceBonus)
 	{
-		return (int) Math.floor(level * prayer) + stanceBonus + 8;
+		return prayerLevel(level, prayer) + stanceBonus + 8;
+	}
+
+	/** Combat prayers use whole percentage points; avoid 100 * 1.15 rounding to 114. */
+	public static int prayerLevel(int level, double prayer)
+	{
+		return (int) Math.floorDiv(level * Math.round(prayer * 100), 100);
+	}
+
+	/** Burst of Strength and Sharp Eye grant at least one damage level below level 20. */
+	public static int effectiveDamageLevel(int level, double prayer, int stanceBonus)
+	{
+		int boosted = prayer == 1.05 && level < 20 ? level + 1 : prayerLevel(level, prayer);
+		return boosted + stanceBonus + 8;
 	}
 
 	public static int maxHitFromEffective(int effectiveLevel, int strengthBonus)

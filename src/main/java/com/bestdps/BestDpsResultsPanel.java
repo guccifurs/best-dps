@@ -314,7 +314,11 @@ final class BestDpsResultsPanel extends JPanel
 		JLabel weaponLabel = label(weaponName(result), BestDpsTheme.BODY.deriveFont(Font.BOLD, 15), BestDpsTheme.TEXT);
 		weaponLabel.setToolTipText(tooltip(weaponName(result), result.getSpellName()));
 		names.add(weaponLabel, BorderLayout.NORTH);
-		String attack = result.getAttackType() + " · " + result.getAttackSpeed() + " ticks";
+		double averageTicks = result.getDps() > 0 ? result.getExpectedHit() / (result.getDps() * 0.6) : result.getAttackSpeed();
+		String interval = Math.abs(averageTicks - result.getAttackSpeed()) > 0.000001
+			? String.format(java.util.Locale.ROOT, "%.2f ticks avg", averageTicks)
+			: result.getAttackSpeed() + " ticks";
+		String attack = result.getAttackType() + " · " + interval;
 		if (!result.getSpellName().isEmpty()) { attack += " · " + result.getSpellName(); }
 		JLabel attackLabel = label(attack, BestDpsTheme.SMALL, BestDpsTheme.MUTED);
 		attackLabel.setToolTipText(tooltip(weaponName(result), attack));

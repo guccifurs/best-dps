@@ -36,6 +36,9 @@ final class RangedAmmo
 		int weaponId = weapon.getId();
 		return isBlowpipe(weapon) || arrowTierForWeapon(weaponId) > 0
 			|| boltTierForWeapon(weaponId) > 0
+			|| weaponId == 9705
+			|| weaponId == 2883
+			|| weaponId == 4827
 			|| weaponId == 8880
 			|| weaponId == 10156
 			|| weaponId == 28869
@@ -74,6 +77,14 @@ final class RangedAmmo
 
 		switch (weaponId)
 		{
+			case 9705:
+				return ammoId == 9706;
+			case 2883:
+				return ammoId == 2866 || ammoId == 4773 || ammoId == 4778 || ammoId == 4783
+					|| ammoId == 4788 || ammoId == 4793;
+			case 4827:
+				return ammoId == 2866 || ammoId == 4773 || ammoId == 4778 || ammoId == 4783
+					|| ammoId == 4788 || ammoId == 4793 || ammoId == 4798 || ammoId == 4803;
 			case 8880:
 				return boltTier(ammoId) > 0 && boltTier(ammoId) <= 16
 					|| ammoId == 9140
@@ -152,16 +163,18 @@ final class RangedAmmo
 			case 853:
 				return 30;
 			case 6724:
-			case 855:
-			case 857:
 			case 859:
 			case 861:
-			case 10282:
 			case 10284:
 			case 12788:
 			case 28794:
 				return 50;
+			case 855:
+			case 857:
+			case 10282:
+				return 40;
 			case 11235:
+			case 12424:
 			case 12765:
 			case 12766:
 			case 12767:
@@ -169,6 +182,8 @@ final class RangedAmmo
 			case 20997:
 			case 27610:
 			case 27612:
+			case 30434:
+			case 30436:
 			case 27853:
 			case 29591:
 			case 29611:
@@ -218,8 +233,8 @@ final class RangedAmmo
 	{
 		switch (ammoId)
 		{
-			case 78:
 			case 598:
+			case 942:
 			case 882:
 			case 883:
 			case 884:
@@ -257,6 +272,7 @@ final class RangedAmmo
 			case 5626:
 				return 30;
 			case 892:
+			case 78:
 			case 893:
 			case 2540:
 			case 2541:

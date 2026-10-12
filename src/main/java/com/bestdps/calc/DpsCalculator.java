@@ -45,7 +45,7 @@ public final class DpsCalculator
 		PlayerLevels levels = request.getLevels();
 		PrayerBonuses prayers = request.getPrayers();
 		int effectiveAttack = RollMath.effectiveLevel(levels.getAttack(), prayers.getMeleeAccuracy(), stance.attack);
-		int effectiveStrength = RollMath.effectiveLevel(levels.getStrength(), prayers.getMeleeStrength(), stance.strength);
+		int effectiveStrength = RollMath.effectiveDamageLevel(levels.getStrength(), prayers.getMeleeStrength(), stance.strength);
 		if (wearing(loadout, "soulreaper axe"))
 		{
 			effectiveStrength += multiply(levels.getStrength(), 6 * request.getCombatContext().getSoulreaperStacks(), 100);
@@ -92,6 +92,7 @@ public final class DpsCalculator
 			minHit = (int) Math.floor(maxHit * 3.0 / 20.0);
 			maxHit -= minHit;
 		}
+		minHit += EncounterRules.minimumHit(request.getMonster(), loadout, attackType, maxHit);
 		double expected = expectedHit(request, loadout, attackType, accuracy, minHit, maxHit);
 		if (isScythe(loadout))
 		{
@@ -117,7 +118,7 @@ public final class DpsCalculator
 			expected = expectedScaledHit(request, loadout, attackType, accuracy, minHit, maxHit, 5, 4) * 0.95
 				+ expectedScaledHit(request, loadout, attackType, accuracy, minHit, maxHit, 2, 1) * 0.05;
 		}
-		if (isKalphite(request) && wearing(loadout, "keris") && !wearing(loadout, "keris partisan of amascut"))
+		if (isKalphite(request) && wearing(loadout, "keris"))
 		{
 			// 1/51 triple damage roll, before target-specific reductions.
 			expected = expected * 50.0 / 51.0 + expectedScaledHit(request, loadout, attackType, accuracy, minHit, maxHit, 3, 1) / 51.0;
@@ -126,27 +127,19 @@ public final class DpsCalculator
 		{
 			expected = expected * 0.75 + expectedHit(request, loadout, attackType, 1, 1, maxHit + 1) * 0.25;
 		}
-		if (EncounterRules.isWardenCore(request.getMonster()))
-		{
-			expected = displayedMax(request, loadout, attackType, maxHit);
-			if (isScythe(loadout))
-			{
-				for (int hit = 1; hit < Math.min(3, request.getMonster().getSize()); hit++) expected += displayedMax(request, loadout, attackType, maxHit / (1 << hit));
-			}
-			else if (wearing(loadout, "dual macuahuitl") || wearing(loadout, "sulphur blades") || wearing(loadout, "glacial temotli") || wearing(loadout, "torag's hammers"))
-			{
-				expected = displayedMax(request, loadout, attackType, maxHit / 2) + displayedMax(request, loadout, attackType, maxHit - maxHit / 2);
-			}
-			accuracy = 1;
-		}
+
 		int speed = attackSpeed(loadout, CombatStyle.MELEE);
 		double expectedSpeed = EncounterRules.attackSpeed(request.getMonster(), loadout, attackType, null, speed);
 		if (fullSet(loadout, "dual macuahuitl", "blood moon helm", "blood moon chestplate", "blood moon tassets"))
 		{
 			expectedSpeed -= accuracy / 3.0 + accuracy * accuracy * 2.0 / 9.0;
 		}
+		int maximum = attackMaximum(request, loadout, attackType, maxHit, speed);
+		if (EncounterRules.guaranteedMaximumHit(request.getMonster(), loadout, attackType)) expected = accuracy * maximum;
+		int instant = EncounterRules.instantKillHit(request.getMonster(), loadout, attackType, null);
+		if (instant >= 0) { maximum = instant; expected = accuracy * instant; }
 		return new DpsResult(loadout, expected / (expectedSpeed * RollMath.SECONDS_PER_TICK), accuracy, expected,
-			displayedMax(request, loadout, attackType, maxHit), speed, stance.label(), attackRoll, defenceRoll);
+			maximum, speed, stance.label(), attackRoll, defenceRoll);
 	}
 
 	private DpsResult calculateRanged(OptimizationRequest request, Loadout loadout)
@@ -169,23 +162,39 @@ public final class DpsCalculator
 	{
 		int effectiveAccuracy = RollMath.effectiveLevel(levels.getRanged(), prayers.getRangedAccuracy(), stanceBonus);
 		boolean strengthWeapon = wearing(loadout, "eclipse atlatl") || wearing(loadout, "hunter's spear");
-		int effectiveDamage = RollMath.effectiveLevel(strengthWeapon ? levels.getStrength() : levels.getRanged(),
-			strengthWeapon ? prayers.getMeleeStrength() : prayers.getRangedStrength(), stanceBonus);
+		// Atlatl/spear use the Strength level and equipment, but still use ranged prayers.
+		int effectiveDamage = RollMath.effectiveDamageLevel(strengthWeapon ? levels.getStrength() : levels.getRanged(),
+			prayers.getRangedStrength(), stanceBonus);
 
 		if (isWearingRangedVoid(loadout))
 		{
-			effectiveAccuracy = (int) Math.floor(effectiveAccuracy * 1.10);
-			effectiveDamage = (int) Math.floor(effectiveDamage * (isWearingEliteVoid(loadout) ? 1.125 : 1.10));
+			effectiveAccuracy = multiply(effectiveAccuracy, 11, 10);
+			effectiveDamage = isWearingEliteVoid(loadout) ? multiply(effectiveDamage, 9, 8) : multiply(effectiveDamage, 11, 10);
 		}
 
 		long attackRoll = RollMath.attackRoll(effectiveAccuracy, loadout.getOffensive().getRanged() + (quiverApplies(loadout) ? 10 : 0));
 		int maxHit = RollMath.maxHitFromEffective(effectiveDamage, strengthWeapon ? loadout.getBonuses().getStrength() : effectiveRangedStrength(loadout));
 		attackRoll = applyRangedAccuracyBonuses(request, loadout, attackRoll);
-		maxHit = applyRangedDamageBonuses(request, loadout, maxHit);
+		attackRoll *= EncounterRules.attackRollMultiplier(request.getMonster(), "ranged");
+		String weaponName = name(loadout.getWeapon());
+		if (weaponName.equals("ogre bow") || weaponName.equals("comp ogre bow"))
+		{
+			// Ogre bows ignore prayers, stance, armour strength and ordinary equipment multipliers.
+			GearItem ammo = loadout.get(GearSlot.AMMO);
+			maxHit = RollMath.maxHitFromEffective(levels.getRanged() + 10, ammo == null ? 0 : ammo.getBonuses().getRangedStrength());
+		}
+		else if (weaponName.equals("holy water"))
+		{
+			if (!isDemon(request)) return unavailable(loadout, "Holy water only damages demons");
+			maxHit = RollMath.maxHitFromEffective(levels.getRanged() + 10, loadout.getWeapon().getBonuses().getRangedStrength());
+			maxHit = multiply(maxHit, 100 + demonbaneBonus(request, 60), 100);
+			if (request.getMonster().normalizedName().equals("nezikchened")) maxHit += 5;
+		}
+		else maxHit = applyRangedDamageBonuses(request, loadout, maxHit);
 		long defenceRoll = npcDefenceRoll(request, "ranged", loadout.getWeapon());
 		double accuracy = RollMath.normalAccuracy(attackRoll, defenceRoll);
 		accuracy = EncounterRules.forcedAccuracy(request.getMonster(), loadout, "ranged", accuracy);
-		int minHit = 0;
+		int minHit = EncounterRules.minimumHit(request.getMonster(), loadout, "ranged", maxHit);
 		if (EncounterRules.isWardenPhaseTwo(request.getMonster()))
 		{
 			int modifier = wardensModifier(attackRoll, defenceRoll);
@@ -207,27 +216,36 @@ public final class DpsCalculator
 
 		int damageTicks = speed;
 		speed = EncounterRules.attackSpeed(request.getMonster(), loadout, "ranged", null, speed);
-		return new DpsResult(loadout, expected / (speed * RollMath.SECONDS_PER_TICK), accuracy, expected, displayedMax(request, loadout, "ranged", maxHit, damageTicks), speed, rapid ? "ranged rapid" : "ranged accurate", attackRoll, defenceRoll);
+		int maximum = attackMaximum(request, loadout, "ranged", maxHit, damageTicks);
+		if (EncounterRules.guaranteedMaximumHit(request.getMonster(), loadout, "ranged")) expected = accuracy * maximum;
+		int instant = EncounterRules.instantKillHit(request.getMonster(), loadout, "ranged", null);
+		if (instant >= 0) { maximum = instant; expected = accuracy * instant; }
+		return new DpsResult(loadout, expected / (speed * RollMath.SECONDS_PER_TICK), accuracy, expected, maximum, speed, rapid ? "ranged rapid" : "ranged accurate", attackRoll, defenceRoll);
 	}
 
 	private DpsResult calculateMagic(OptimizationRequest request, Loadout loadout)
 	{
-		OptimizationRequest effectiveRequest = isPoweredStaff(loadout) && request.getSpell() != null ? request.withSpell(null) : request;
+		OptimizationRequest effectiveRequest = request;
+		boolean powered = request.getSpell() == null && isPoweredStaff(loadout);
 		String rejection = EncounterRules.rejectionReason(request.getMonster(), loadout, "magic", effectiveRequest.getSpell());
 		if (!rejection.isEmpty())
 		{
 			return unavailable(loadout, rejection);
 		}
+		if (request.getSpell() != null && !BestDpsOptimizer.spellAllowed(request, loadout, request.getSpell()))
+		{
+			return unavailable(loadout, "The selected spell requires its level, unlocks and compatible staff.");
+		}
 		PlayerLevels levels = effectiveRequest.getLevels();
 		PrayerBonuses prayers = effectiveRequest.getPrayers();
-		int effectiveAccuracy = (int) Math.floor(levels.getMagic() * prayers.getMagicAccuracy()) + (isPoweredStaff(loadout) ? 11 : 9);
+		int effectiveAccuracy = RollMath.prayerLevel(levels.getMagic(), prayers.getMagicAccuracy()) + (powered ? 11 : 9);
 		if (isWearingMagicVoid(loadout))
 		{
-			effectiveAccuracy = (int) Math.floor(effectiveAccuracy * 1.45);
+			effectiveAccuracy = multiply(effectiveAccuracy, 29, 20);
 		}
 
 		int magicAttackBonus = loadout.getOffensive().getMagic();
-		if (wearing(loadout, "tumeken"))
+		if (powered && wearing(loadout, "tumeken"))
 		{
 			magicAttackBonus *= EncounterRules.isTombsOfAmascut(request.getMonster()) ? 4 : 3;
 		}
@@ -245,8 +263,8 @@ public final class DpsCalculator
 			accuracy = accuracy * 0.75 + (confliction ? conflictionAccuracy(attackRoll, reducedDefence)
 				: RollMath.normalAccuracy(attackRoll, reducedDefence)) * 0.25;
 		}
-		accuracy = EncounterRules.forcedAccuracy(request.getMonster(), loadout, "magic", accuracy);
-		int minHit = 0;
+		accuracy = EncounterRules.forcedAccuracy(request.getMonster(), loadout, "magic", effectiveRequest.getSpell(), accuracy);
+		int minHit = EncounterRules.minimumHit(request.getMonster(), loadout, "magic", maxHit);
 		if (EncounterRules.isWardenPhaseTwo(request.getMonster()))
 		{
 			int modifier = wardensModifier(attackRoll, defenceRoll);
@@ -257,7 +275,7 @@ public final class DpsCalculator
 		double expected = expectedHit(effectiveRequest, loadout, "magic", accuracy, minHit, maxHit);
 		if (fullSet(loadout, "ahrim's staff", "ahrim's hood", "ahrim's robetop", "ahrim's robeskirt", "amulet of the damned"))
 		{
-			expected = expected * 0.75 + expectedScaledHit(effectiveRequest, loadout, "magic", accuracy, 0, maxHit, 13, 10) * 0.25;
+			expected = expected * 0.75 + expectedScaledHit(effectiveRequest, loadout, "magic", accuracy, minHit, maxHit, 13, 10) * 0.25;
 		}
 		if (wearing(loadout, "sanguinesti"))
 		{
@@ -266,7 +284,7 @@ public final class DpsCalculator
 		if (isStandardSpell(effectiveRequest) && wearing(loadout, "twinflame staff")
 			&& (effectiveRequest.getSpell().getName().endsWith("Bolt") || effectiveRequest.getSpell().getName().endsWith("Blast") || effectiveRequest.getSpell().getName().endsWith("Wave")))
 		{
-			expected += expectedScaledHit(effectiveRequest, loadout, "magic", accuracy, 0, maxHit, 2, 5);
+			expected += expectedTwinflameHit(effectiveRequest, loadout, accuracy, minHit, maxHit);
 		}
 
 		if (request.getMonster().normalizedName().equals("salarin the twisted"))
@@ -282,13 +300,18 @@ public final class DpsCalculator
 			accuracy = magicAttackBonus > -64 ? 1 : 0;
 			expected = accuracy * maxHit;
 		}
-		int speed = isPoweredStaff(loadout) ? attackSpeed(loadout, CombatStyle.MAGIC)
-			: wearing(loadout, "harmonised nightmare staff") && isStandardSpell(effectiveRequest) ? 4 : 5;
+		int speed = nominalSpeed(effectiveRequest, loadout, "magic");
 		speed = EncounterRules.attackSpeed(request.getMonster(), loadout, "magic", effectiveRequest.getSpell(), speed);
 		String spellName = effectiveRequest.getSpell() == null ? "" : effectiveRequest.getSpell().getName();
 		String poweredName = spellName.isEmpty() && isPoweredStaff(loadout) && loadout.getWeapon() != null ? loadout.getWeapon().getName() : "";
 		String attackType = spellName.isEmpty() ? poweredName.isEmpty() ? "magic" : "magic: " + poweredName : "magic: " + spellName;
-		return new DpsResult(loadout, expected / (speed * RollMath.SECONDS_PER_TICK), accuracy, expected, displayedMax(effectiveRequest, loadout, "magic", maxHit), speed, attackType, attackRoll, defenceRoll, loadout.getCost(), spellName);
+		int maximum = attackMaximum(effectiveRequest, loadout, "magic", maxHit, nominalSpeed(effectiveRequest, loadout, "magic"));
+		if (EncounterRules.guaranteedMaximumHit(request.getMonster(), loadout, "magic")) expected = accuracy * maximum;
+		int instant = EncounterRules.instantKillHit(request.getMonster(), loadout, "magic", effectiveRequest.getSpell());
+		if (instant >= 0) { maximum = instant; expected = accuracy * instant; }
+		if (request.getMonster().normalizedName().equals("salarin the twisted") || request.getMonster().normalizedName().equals("zombified spawn") && "Crumble Undead".equals(spellName)) maximum = maxHit;
+		return new DpsResult(loadout, expected / (speed * RollMath.SECONDS_PER_TICK), accuracy, expected,
+			maximum, speed, attackType, attackRoll, defenceRoll, loadout.getCost(), spellName);
 	}
 
 	private int magicMaxHit(OptimizationRequest request, Loadout loadout)
@@ -297,8 +320,8 @@ public final class DpsCalculator
 		String weaponName = name(weapon);
 		int magicLevel = request.getLevels().getMagic();
 		SpellStats spell = request.getSpell();
-		boolean poweredStaff = isPoweredStaff(loadout);
-		if (spell != null && !poweredStaff)
+		boolean poweredStaff = spell == null && isPoweredStaff(loadout);
+		if (spell != null)
 		{
 			if (magicLevel < spell.getMagicLevel()) return 0;
 			if ("Magic Dart".equals(spell.getName()))
@@ -429,10 +452,16 @@ public final class DpsCalculator
 		{
 			roll = multiply(roll, 133, 100);
 		}
+		if (wearing(loadout, "keris partisan of the sun") && EncounterRules.isTombsOfAmascut(request.getMonster())
+			&& request.getMonster().getHitpoints() * request.getEncounterContext().getTargetHpPercent() / 100 < request.getMonster().getHitpoints() / 4)
+		{
+			roll = multiply(roll, 5, 4);
+		}
 		if (isDragon(request) && wearing(loadout, "dragon hunter lance"))
 		{
 			roll = multiply(roll, 6, 5);
 		}
+		if (isDragon(request) && wearing(loadout, "dragon hunter wand")) roll = multiply(roll, 7, 4);
 		if (request.getMonster().hasAttribute("golem") && wearing(loadout, "granite hammer"))
 		{
 			roll = multiply(roll, 13, 10);
@@ -444,6 +473,7 @@ public final class DpsCalculator
 				roll = multiply(roll, wearing(loadout, "blisterwood stake") ? 125 : 105, 100);
 			}
 			if (wearing(loadout, "hallowed flail") || wearing(loadout, "sunspear")) roll = multiply(roll, 125, 100);
+			if (wearing(loadout, "efaritay's aid") && EncounterRules.isSilverWeapon(loadout, attackType)) roll = multiply(roll, 23, 20);
 		}
 		return "crush".equals(attackType) ? applyInquisitorBonus(loadout, roll) : roll;
 	}
@@ -463,6 +493,7 @@ public final class DpsCalculator
 		{
 			maxHit = multiply(maxHit, 6, 5);
 		}
+		if (isDragon(request) && wearing(loadout, "dragon hunter wand")) maxHit = multiply(maxHit, 7, 5);
 		if (isKalphite(request) && wearing(loadout, "keris"))
 		{
 			maxHit = multiply(maxHit, wearing(loadout, "keris partisan of amascut") ? 115 : 133, 100);
@@ -491,7 +522,13 @@ public final class DpsCalculator
 	{
 		if (isCrystalBow(loadout)) roll = multiply(roll, 20 + crystalArmourPieces(loadout), 20);
 		if (wearing(loadout, "blisterwood stake") && (request.getMonster().hasAttribute("vampyre1") || request.getMonster().hasAttribute("vampyre2") || request.getMonster().hasAttribute("vampyre3"))) roll = multiply(roll, 125, 100);
-		if (isUndead(request) && salveEnhanced(loadout) && salveImbued(loadout))
+		if ((request.getMonster().hasAttribute("vampyre1") || request.getMonster().hasAttribute("vampyre2") || request.getMonster().hasAttribute("vampyre3"))
+			&& wearing(loadout, "efaritay's aid") && EncounterRules.isSilverWeapon(loadout, "ranged")) roll = multiply(roll, 23, 20);
+		if (avariceApplies(request, loadout))
+		{
+			roll = multiply(roll, 6, 5);
+		}
+		else if (isUndead(request) && salveEnhanced(loadout) && salveImbued(loadout))
 		{
 			roll = multiply(roll, 6, 5);
 		}
@@ -523,7 +560,11 @@ public final class DpsCalculator
 		boolean dragonbane = isDragon(request) && wearing(loadout, "dragon hunter crossbow");
 		boolean demonbane = isDemon(request) && wearing(loadout, "scorching bow");
 		boolean revenant = revenantWeapon(request, loadout);
-		if (isUndead(request) && salveEnhanced(loadout) && (strengthWeapon || salveImbued(loadout)))
+		if (avariceApplies(request, loadout))
+		{
+			maxHit = multiply(maxHit, 6, 5);
+		}
+		else if (isUndead(request) && salveEnhanced(loadout) && (strengthWeapon || salveImbued(loadout)))
 		{
 			maxHit = multiply(maxHit, 6, 5);
 		}
@@ -566,8 +607,15 @@ public final class DpsCalculator
 			additive += salveEnhanced(loadout) ? 20 : 15;
 			slayer = false;
 		}
+		else if (avariceApplies(request, loadout))
+		{
+			additive += 20;
+			slayer = false;
+		}
 		roll = multiply(roll, 100 + additive, 100);
 		if (isDragon(request) && wearing(loadout, "dragon hunter wand")) roll = multiply(roll, 7, 4);
+		if (isDragon(request) && wearing(loadout, "dragon hunter lance")) roll = multiply(roll, 6, 5);
+		if (isDragon(request) && wearing(loadout, "dragon hunter crossbow")) roll = multiply(roll, 13, 10);
 		if (slayer) roll = multiply(roll, 23, 20);
 		if (isDemon(request) && request.getSpell() != null && request.getSpell().getName().contains("Demonbane"))
 		{
@@ -599,7 +647,7 @@ public final class DpsCalculator
 			if (wearing(loadout, "virtus robe top")) magicDamage += 30;
 			if (wearing(loadout, "virtus robe bottom")) magicDamage += 30;
 		}
-		if (wearing(loadout, "tumeken"))
+		if (request.getSpell() == null && wearing(loadout, "tumeken"))
 		{
 			magicDamage = Math.min(1000, magicDamage * (EncounterRules.isTombsOfAmascut(request.getMonster()) ? 4 : 3));
 		}
@@ -610,9 +658,16 @@ public final class DpsCalculator
 			magicDamage += salveEnhanced(loadout) ? 200 : 150;
 			slayer = false;
 		}
-		maxHit = (int) Math.floor(maxHit * (1.0 + (magicDamage + request.getPrayers().getMagicDamagePercent() * 10.0) / 1000.0));
+		else if (avariceApplies(request, loadout))
+		{
+			magicDamage += 200;
+			slayer = false;
+		}
+		maxHit += multiply(maxHit, magicDamage + (int) Math.round(request.getPrayers().getMagicDamagePercent() * 10), 1000);
 		if (slayer) maxHit = multiply(maxHit, 23, 20);
 		if (isDragon(request) && wearing(loadout, "dragon hunter wand")) maxHit = multiply(maxHit, 7, 5);
+		if (isDragon(request) && wearing(loadout, "dragon hunter lance")) maxHit = multiply(maxHit, 6, 5);
+		if (isDragon(request) && wearing(loadout, "dragon hunter crossbow")) maxHit = multiply(maxHit, 5, 4);
 		if (wearing(loadout, "dawnbringer")) maxHit = Math.max(2, maxHit / 2);
 		if (revenantWeapon(request, loadout)) maxHit = multiply(maxHit, 3, 2);
 		if (matchesWeakness(request)) maxHit += multiply(baseMaxHit, request.getMonster().getWeaknessSeverity(), 100);
@@ -819,7 +874,7 @@ public final class DpsCalculator
 
 	private static boolean isSmokeStaff(Loadout loadout)
 	{
-		return wearing(loadout, "smoke battlestaff") || wearing(loadout, "mystic smoke staff");
+		return wearing(loadout, "smoke battlestaff") || wearing(loadout, "mystic smoke staff") || wearing(loadout, "twinflame staff");
 	}
 
 	private static boolean quiverApplies(Loadout loadout)
@@ -848,10 +903,16 @@ public final class DpsCalculator
 
 	private static long applyMeleeTaskBonus(OptimizationRequest request, Loadout loadout, long value)
 	{
+		if (avariceApplies(request, loadout)) return multiply(value, 6, 5);
 		if (isUndead(request) && salveEnhanced(loadout)) return multiply(value, 6, 5);
 		if (isUndead(request) && wearing(loadout, "salve amulet")) return multiply(value, 7, 6);
 		if (isSlayerTaskEligible(request) && isSlayerHelm(loadout)) return multiply(value, 7, 6);
 		return value;
+	}
+
+	private static boolean avariceApplies(OptimizationRequest request, Loadout loadout)
+	{
+		return request.getMonster().normalizedName().startsWith("revenant") && wearing(loadout, "amulet of avarice");
 	}
 
 	private static int demonbanePercent(OptimizationRequest request, Loadout loadout)
@@ -884,7 +945,7 @@ public final class DpsCalculator
 		double total = 0;
 		for (int hit = low; hit <= maxHit; hit++)
 		{
-			total += Math.max(0, targetHit.applyAsDouble(Math.max(1, effects.apply(hit + extraDamage))) - armour);
+			total += Math.max(0, targetHit.applyAsDouble(Math.max(1, effects.apply(hit, extraDamage))) - armour);
 		}
 		return accuracy * total / (maxHit - low + 1.0) + missed;
 	}
@@ -906,7 +967,7 @@ public final class DpsCalculator
 		double total = 0;
 		for (int hit = minHit; hit <= maxHit; hit++)
 		{
-			int scaled = Math.max(1, effects.apply(multiply(hit, numerator, denominator) + extraDamage));
+			int scaled = Math.max(1, effects.applyScaled(hit, extraDamage, numerator, denominator));
 			total += Math.max(0, targetHit.applyAsDouble(scaled) - armour);
 		}
 		return accuracy * total / (maxHit - minHit + 1.0);
@@ -917,11 +978,25 @@ public final class DpsCalculator
 		return displayedMax(request, loadout, attackType, maxHit, nominalSpeed(request, loadout, attackType));
 	}
 
+	/** Twinflame copies the already-clamped main hit; its smaller second splat may be zero. */
+	private static double expectedTwinflameHit(OptimizationRequest request, Loadout loadout, double accuracy, int minHit, int maxHit)
+	{
+		if (maxHit <= 0 || accuracy <= 0) return 0;
+		int extra = EncounterRules.unshieldedHitBonus(request.getMonster(), loadout, "magic", request.getSpell(), nominalSpeed(request, loadout, "magic"));
+		IntToDoubleFunction targetHit = EncounterRules.hitModifier(request, loadout, "magic");
+		double total = 0;
+		for (int hit = minHit; hit <= maxHit; hit++)
+		{
+			total += targetHit.applyAsDouble(multiply(Math.max(1, hit + extra), 2, 5));
+		}
+		return accuracy * total / (maxHit - minHit + 1.0);
+	}
+
 	private static int displayedMax(OptimizationRequest request, Loadout loadout, String attackType, int maxHit, int ticks)
 	{
 		int armour = "magic".equals(attackType) ? 0 : request.getMonster().getDefensive().getFlatArmour();
 		int extra = EncounterRules.unshieldedHitBonus(request.getMonster(), loadout, attackType, request.getSpell(), ticks);
-		int damage = hitEffects(request, loadout, attackType).apply(maxHit + extra);
+		int damage = hitEffects(request, loadout, attackType).apply(maxHit, extra);
 		return (int) Math.max(0, EncounterRules.maximumHit(request, loadout, attackType, damage) - armour);
 	}
 
@@ -932,6 +1007,66 @@ public final class DpsCalculator
 			if (!wearing(loadout, piece)) return false;
 		}
 		return true;
+	}
+
+	/** Maximum damage of the entire attack, including secondary splats and possible normal procs. */
+	private static int attackMaximum(OptimizationRequest request, Loadout loadout, String type, int maxHit, int ticks)
+	{
+		int maximum = displayedMax(request, loadout, type, maxHit, ticks);
+		if ("magic".equals(type))
+		{
+			if (wearing(loadout, "sanguinesti")) maximum = displayedMax(request, loadout, type, maxHit + 8, ticks);
+			if (fullSet(loadout, "ahrim's staff", "ahrim's hood", "ahrim's robetop", "ahrim's robeskirt", "amulet of the damned"))
+			{
+				int extra = EncounterRules.unshieldedHitBonus(request.getMonster(), loadout, type, request.getSpell(), ticks);
+				int damage = hitEffects(request, loadout, type).applyScaled(maxHit, extra, 13, 10);
+				maximum = EncounterRules.maximumHit(request, loadout, type, damage);
+			}
+			if (isStandardSpell(request) && wearing(loadout, "twinflame staff")
+				&& (request.getSpell().getName().endsWith("Bolt") || request.getSpell().getName().endsWith("Blast") || request.getSpell().getName().endsWith("Wave")))
+			{
+				int extra = EncounterRules.unshieldedHitBonus(request.getMonster(), loadout, type, request.getSpell(), ticks);
+				maximum += EncounterRules.maximumHit(request, loadout, type, multiply(Math.max(1, maxHit + extra), 2, 5));
+			}
+			return maximum;
+		}
+		if ("ranged".equals(type))
+		{
+			String ammo = name(loadout.get(GearSlot.AMMO));
+			boolean zaryte = wearing(loadout, "zaryte crossbow");
+			if (ammo.endsWith("(e)") && "crossbow".equalsIgnoreCase(loadout.getWeapon().getCategory()))
+			{
+				int procMax = maxHit;
+				if (ammo.startsWith("diamond")) procMax = multiply(maxHit, zaryte ? 126 : 115, 100);
+				else if (ammo.startsWith("onyx") && !isUndead(request)) procMax = multiply(maxHit, zaryte ? 132 : 120, 100);
+				else if (ammo.startsWith("dragonstone") && !isDragon(request) && !request.getMonster().hasAttribute("fiery")) procMax += request.getLevels().getRanged() * 2 / (zaryte ? 9 : 10);
+				else if (ammo.startsWith("opal")) procMax += request.getLevels().getRanged() / (zaryte ? 9 : 10);
+				else if (ammo.startsWith("pearl")) procMax += request.getLevels().getRanged() / ((request.getMonster().hasAttribute("fiery") ? 15 : 20) - (zaryte ? 2 : 0));
+				maximum = Math.max(maximum, displayedMax(request, loadout, type, procMax, ticks));
+				if (ammo.startsWith("ruby") && request.getCombatContext().getCurrentHp() >= 10)
+				{
+					int hp = request.getMonster().getHitpoints() * request.getEncounterContext().getTargetHpPercent() / 100;
+					int ruby = Math.min(zaryte ? 110 : 100, multiply(hp, zaryte ? 22 : 20, 100));
+					int proc = request.getMonster().normalizedName().equals("corporeal beast") ? ruby : EncounterRules.maximumHit(request, loadout, type, ruby);
+					maximum = Math.max(maximum, Math.max(0, proc - request.getMonster().getDefensive().getFlatArmour()));
+				}
+			}
+			if (wearing(loadout, "dark bow") || wearing(loadout, "tonalztics of ralos") && "charged".equalsIgnoreCase(loadout.getWeapon().getVersion())) maximum *= 2;
+			if (fullSet(loadout, "karil's crossbow", "karil's coif", "karil's leathertop", "karil's leatherskirt", "amulet of the damned")) maximum += displayedMax(request, loadout, type, maxHit / 2, ticks);
+			return maximum;
+		}
+		if (isScythe(loadout))
+		{
+			for (int splat = 1; splat < Math.min(3, request.getMonster().getSize()); splat++) maximum += displayedMax(request, loadout, type, maxHit / (1 << splat), ticks);
+		}
+		else if (wearing(loadout, "dual macuahuitl") || wearing(loadout, "sulphur blades") || wearing(loadout, "glacial temotli") || wearing(loadout, "torag's hammers"))
+		{
+			maximum = displayedMax(request, loadout, type, maxHit / 2, ticks) + displayedMax(request, loadout, type, maxHit - maxHit / 2, ticks);
+		}
+		if (wearing(loadout, "gadderhammer") && request.getMonster().hasAttribute("shade")) maximum = displayedMax(request, loadout, type, maxHit * 2, ticks);
+		if (isKalphite(request) && wearing(loadout, "keris")) maximum = displayedMax(request, loadout, type, maxHit * 3, ticks);
+		if (fullSet(loadout, "verac's helm", "verac's brassard", "verac's plateskirt", "verac's flail")) maximum = displayedMax(request, loadout, type, maxHit + 1, ticks);
+		return maximum;
 	}
 
 	/** Immutable factors computed once per hit distribution, never once per possible damage. */
@@ -958,9 +1093,16 @@ public final class DpsCalculator
 			this.minimum = minimum;
 		}
 
-		private int apply(int damage)
+		private int apply(int damage, int extra)
 		{
+			return applyScaled(damage, extra, 1, 1);
+		}
+
+		private int applyScaled(int damage, int extra, int numerator, int denominator)
+		{
+			// Mark precedes Ahrim's proc and the Tormented Demon's flat unshielded bonus.
 			if (mark != 0) damage += multiply(multiply(damage, mark, 100), vulnerability, 100);
+			damage = multiply(damage, numerator, denominator) + extra;
 			if (dharok != 10000) damage = multiply(damage, dharok, 10000);
 			if (berserker) damage = multiply(damage, 6, 5);
 			if (silverRing) damage = multiply(damage, 11, 10);
@@ -978,7 +1120,8 @@ public final class DpsCalculator
 			{
 				return new HitEffects(10000, false, false, 100, wearing(loadout, "purging staff") ? 50 : 25, demonbaneBonus(request, 100), 1);
 			}
-			return HitEffects.NONE;
+			return request.getMonster().hasAttribute("vampyre1") && wearing(loadout, "efaritay's aid")
+				? new HitEffects(10000, false, true, 100, 0, 100, 1) : HitEffects.NONE;
 		}
 		boolean firstTier = request.getMonster().hasAttribute("vampyre1");
 		boolean vampyre = firstTier || request.getMonster().hasAttribute("vampyre2") || request.getMonster().hasAttribute("vampyre3");
@@ -1010,7 +1153,7 @@ public final class DpsCalculator
 			else if (weapon.contains("ivandis flail")) vampireBonus = 120;
 			else if (weapon.contains("rod of ivandis")) vampireBonus = 110;
 			else if (weapon.contains("silver") && firstTier) vampireBonus = 110;
-			silverRing = (vampireBonus > 100 || firstTier) && wearing(loadout, "efaritay's aid");
+			silverRing = (EncounterRules.isSilverWeapon(loadout, style) || firstTier) && wearing(loadout, "efaritay's aid");
 		}
 		return dharok == 10000 && !berserker && !silverRing && vampireBonus == 100 ? HitEffects.NONE
 			: new HitEffects(dharok, berserker, silverRing, vampireBonus, 0, 100, 1);
@@ -1038,7 +1181,8 @@ public final class DpsCalculator
 	{
 		if ("magic".equals(attackType))
 		{
-			return isPoweredStaff(loadout) ? attackSpeed(loadout, CombatStyle.MAGIC)
+			if (wearing(loadout, "twinflame staff")) return 6;
+			return request.getSpell() == null && isPoweredStaff(loadout) ? attackSpeed(loadout, CombatStyle.MAGIC)
 				: wearing(loadout, "harmonised nightmare staff") && isStandardSpell(request) ? 4 : 5;
 		}
 		return attackSpeed(loadout, "ranged".equals(attackType) ? CombatStyle.RANGED : CombatStyle.MELEE);
@@ -1054,6 +1198,8 @@ public final class DpsCalculator
 	private static int demonbaneBonus(OptimizationRequest request, int bonus)
 	{
 		String target = request.getMonster().normalizedName();
+		if (request.getMonster().getId() == 14179) return bonus * 2;
+		if (target.equals("ice demon")) return multiply(bonus, 115, 100);
 		return target.equals("yama") ? multiply(bonus, 120, 100) : target.equals("duke sucellus") ? multiply(bonus, 70, 100) : bonus;
 	}
 

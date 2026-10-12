@@ -17,9 +17,9 @@ copied into the plugin.
   Slayer rounding; ranged Slayer damage stacks additively with relevant bane and
   Wilderness weapon damage bonuses. Melee Salve recognizes enchanted imbued forms.
 - Powered staves use their own max hits, accurate-stance magic levels and attack
-  interval. Ordinary spells use five ticks; Harmonised standard spells use four.
+  interval. Ordinary spells use five ticks; Harmonised standard spells use four and Twinflame spells use six. Explicitly selected spells still use manual-casting rules when holding a powered staff.
 - Shadow multiplies equipment magic accuracy and damage by three, or four in ToA;
-  its equipment damage bonus is capped at 100%. Prayers are added separately.
+  its equipment damage bonus is capped at 100%. These multipliers apply to its powered attack, not manually selected spells. Prayers are added separately.
 - Elemental spells scale to the highest unlocked element in their spell tier.
   Chaos gauntlets and matching elemental amulets add to base spell damage.
   Elemental weakness adds to base accuracy/damage; charged tomes apply afterwards.
@@ -39,7 +39,7 @@ copied into the plugin.
   ranged strength, not their thrown-weapon accuracy. Empty Toxic/Blazing blowpipe
   purchase entries use charged-weapon base strength. Projectile compatibility is
   enforced. Seeking arrows use their normal arrow tier, +20 bow accuracy and a
-  successful-damage floor of three. Atlatl damage uses Strength and melee strength gear.
+  successful-damage floor of three. Atlatl damage uses Strength and melee strength gear, with ranged damage prayers.
 - Normal enchanted ruby, diamond, onyx, dragonstone, opal and pearl bolt damage is
   included, including Zaryte modifiers and the optional Kandarin diary proc bonus.
   Ruby damage uses the selected target HP and requires player HP of at least ten.
@@ -52,7 +52,7 @@ copied into the plugin.
   Purging staff modify demonbane spells; Duke and normal Yama adjust demonbane
   vulnerability. Vampyrebane, silver and Efaritay effects use target attributes.
 - Dinh's defence-to-strength, rat-bane damage, leaf-bladed battleaxe, Colossal blade,
-  Keris triple-hit chance, Gadderhammer shade damage and charged quiver bonuses
+  Keris triple-hit chance (including the Amascut variant), Gadderhammer shade damage and charged quiver bonuses
   have explicit calculations.
 
 NPC scaling, immunities, reachability and per-hit boss transformations live in
@@ -122,3 +122,94 @@ Sources: [Ancient Magicks](https://oldschool.runescape.wiki/w/Ancient_Magicks),
 [Underground Pass](https://oldschool.runescape.wiki/w/Underground_Pass),
 [Slayer unlocks](https://oldschool.runescape.wiki/w/Slayer/Level_up_table),
 [Mage Arena II requirements](https://oldschool.runescape.wiki/w/Mage_Arena_II/Quick_guide).
+
+## External-calculator verification, 12 October 2026
+
+The independent comparison uses the published OSRS Wiki calculator at revision
+[`89c3e25b344aea90d0189746e4b5f73dde0f0383`](https://github.com/weirdgloop/osrs-dps-calc/tree/89c3e25b344aea90d0189746e4b5f73dde0f0383).
+The reference runs in a separate temporary checkout. Its TypeScript is not included
+in the plugin. Comparisons use matching item IDs, NPC variants, levels, prayers,
+spells and state inputs; they compare numerical results, not gameplay outcomes.
+
+Confirmed corrections from this pass:
+
+- Prayer multipliers use integer percentage arithmetic. A level of 100 with a
+  15% prayer becomes 115, not 114 from floating-point truncation. Burst of Strength
+  and Sharp Eye receive their minimum one-level damage boost below level 20.
+- Magic damage is added with integer thousandths. A base hit of 25 with 16%
+  magic damage becomes 29, not 28.
+- Atlatl and Hunter's spear damage uses ranged prayers even though the damage
+  stat and equipment strength are melee values. Piety does not raise their damage.
+- Twinflame receives the smoke-staff standard-spell bonus and casts at six ticks.
+  Its secondary hit is 40% of the main hit after the accurate-zero floor, rounded
+  down; the secondary may remain zero through target damage reductions.
+- The displayed maximum includes the whole attack: secondary splats, scythe hits,
+  possible enchanted-bolt effects and modeled normal-attack passive procs.
+- Mark of Darkness is applied before Ahrim's damage proc and the Tormented
+  Demon's flat unshielded bonus. Ahrim's proc also preserves the Warden
+  phase-two minimum-damage band instead of restarting its roll at zero.
+- Amascut's Keris retains the 1/51 triple-damage proc. Its ordinary Kalphite damage
+  bonus is 15%, while other Keris variants use 33%.
+- Manual casting while holding Shadow does not multiply accuracy/damage. Dragon
+  hunter weapons retain the relevant dragon bonuses when manually casting, and
+  the wand retains its bonuses when used for melee.
+- Avarice applies its ordinary 20% revenant bonus with the usual Slayer exclusion.
+  Forinthry Surge remains an explicitly unmodeled optional buff.
+- Ogre bows use their dedicated damage formula, excluding ordinary damage prayer,
+  stance and armour-strength bonuses. Holy water is restricted to demons and uses
+  its dedicated damage and demonbane calculation.
+- NPC-specific guaranteed maximum, guaranteed accuracy, minimum damage and
+  instant-kill cases are distinct hooks. They are not inferred from a target's name
+  alone. See [encounter coverage](encounter-coverage.md) for their primary sources.
+
+The focused `CombatReferenceRegressionTest` cases cover exact numerical boundaries
+and independently derived distributions, including the Karil/Amulet name-casing
+discrepancy, Mark of Darkness ordering and Tormented Demon flat damage. Independent exact fixtures
+include a 99-stat Atlatl with +87 ranged accuracy/+40 melee strength: Piety gives
+max 17 and attack roll 16157, while Rigour gives max 21 and attack roll 19026.
+A 99-Magic Twinflame with +12 magic accuracy casting Fire Bolt against a target
+with Magic 1 and zero magic defence gives attack roll 9028, full maximum 18,
+six ticks and expected damage 8.473363606157935. These tests also cover the two
+integer-rounding boundaries, manual Shadow casting and ordinary Avarice damage.
+
+### Reference disagreements retained deliberately
+
+A calculator is a comparison source, not an override for newer item rules. The
+following differences have been checked against the live Wiki pages:
+
+- The pinned reference grants Dizana's charged bonus to Atlatl darts. The live
+  quiver page restricts its extra +10 accuracy/+1 ranged strength to arrows and
+  bolts that can be stored in the quiver; darts and javelins are explicitly excluded.
+  Best DPS keeps the arrow/bolt restriction. Cosmetic/poisoned arrow aliases can
+  also cause the reference to omit a qualifying quiver bonus.
+- The pinned reference suppresses the accurate-zero floor for Magic Dart because
+  its spell metadata stores a zero placeholder before calculating its dynamic
+  base hit. Best DPS follows the successful-hit rule for this damaging spell.
+  With an enchanted Slayer's staff at 99 Magic against Magic 1/zero defence,
+  the shared accuracy is 0.9608965769277622. The reference expected damage is
+  9.128517480813743; Best DPS gives 9.17656230966013, the additional probability
+  of a successful roll of zero becoming one.
+- The reference checks the Karil passive against `Amulet of the damned`, but its
+  item dataset uses `Amulet of the Damned`. Its case-sensitive item matching omits
+  the entire 25% chance of a second half-damage hit. Best DPS recognizes the item
+  and keeps the documented passive. Degraded Karil crossbow aliases can also omit
+  the reference quiver bonus even when the equivalent undamaged weapon receives it.
+- Target restrictions, named raid phases, current silver-weapon rules and current
+  Corp-bane exceptions can differ from the pinned reference. These are recorded
+  with live-page evidence in the encounter coverage document, rather than being
+  silently changed to match older reference behavior.
+
+Additional primary sources:
+[prayer modifiers](https://oldschool.runescape.wiki/w/Prayer),
+[Eclipse atlatl](https://oldschool.runescape.wiki/w/Eclipse_atlatl),
+[Twinflame staff](https://oldschool.runescape.wiki/w/Twinflame_staff),
+[Keris partisan of Amascut](https://oldschool.runescape.wiki/w/Keris_partisan_of_amascut),
+[Dizana's quiver](https://oldschool.runescape.wiki/w/Dizana%27s_quiver),
+[successful hits](https://oldschool.runescape.wiki/w/Successful_hit),
+[Magic Dart](https://oldschool.runescape.wiki/w/Magic_Dart),
+[Amulet of avarice](https://oldschool.runescape.wiki/w/Amulet_of_avarice),
+[Amulet of the Damned](https://oldschool.runescape.wiki/w/Amulet_of_the_Damned),
+[Demonbane spells](https://oldschool.runescape.wiki/w/Demonbane_spells),
+[Purging staff](https://oldschool.runescape.wiki/w/Purging_staff),
+[Ogre bow](https://oldschool.runescape.wiki/w/Ogre_bow),
+[Holy water](https://oldschool.runescape.wiki/w/Holy_water).
