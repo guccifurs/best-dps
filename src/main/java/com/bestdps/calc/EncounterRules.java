@@ -421,7 +421,8 @@ public final class EncounterRules
 	public static boolean hasHitModifier(MonsterStats monster)
 	{
 		String name = monster.normalizedName();
-		return name.equals("zulrah") || name.equals("corporeal beast") || name.equals("great olm")
+		return name.equals("vorkath") && monster.normalizedVersion().contains("acid attack")
+			|| name.equals("zulrah") || name.equals("corporeal beast") || name.equals("great olm")
 			|| name.equals("tekton") || name.equals("ice demon") || name.equals("kraken")
 			|| name.equals("cave kraken") || name.startsWith("totem (") || name.contains("slagilith")
 			|| name.equals("tormented demon") || name.equals("the hueycoatl")
@@ -512,6 +513,10 @@ public final class EncounterRules
 	private static IntToDoubleFunction hitModifier(MonsterStats monster, Loadout loadout, String attackType, SpellStats spell)
 	{
 		String name = monster.normalizedName();
+		if (name.equals("vorkath") && monster.normalizedVersion().contains("acid attack"))
+		{
+			return damage -> damage / 2;
+		}
 		if (monster.hasAttribute("vampyre2") && !isSilverWeapon(loadout, attackType)
 			&& itemName(loadout.get(GearSlot.RING)).startsWith("efaritay's aid"))
 		{
@@ -687,6 +692,16 @@ public final class EncounterRules
 		if (name.equals("great olm"))
 		{
 			warnings.add("Olm claw/head damage resistance is modelled. Head damage only counts in the final phase; movement cycles are excluded.");
+		}
+		if (name.equals("vorkath"))
+		{
+			warnings.add(monster.normalizedVersion().contains("acid attack")
+				? "Acid phase halves individual damage. Assumes uninterrupted attacks while moving; Woox-walk timing and lost attacks are excluded."
+				: "Normal attack phase only. Choose Acid attack for half damage; Vorkath is invulnerable during the frozen spawn phase. Antifire, venom protection and kills per trip are not ranked.");
+		}
+		if (name.equals("zombified spawn"))
+		{
+			warnings.add("Crumble Undead kills this spawn with a guaranteed hit when magic attack bonus exceeds -64. This is a single-target kill action, not sustained training DPS.");
 		}
 		if (name.equals("corporeal beast"))
 		{

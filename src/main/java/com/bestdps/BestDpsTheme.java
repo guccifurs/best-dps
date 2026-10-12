@@ -34,6 +34,7 @@ import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.AbstractBorder;
+import javax.swing.border.BevelBorder;
 import javax.swing.plaf.basic.BasicArrowButton;
 import javax.swing.plaf.basic.BasicButtonUI;
 import javax.swing.plaf.basic.BasicCheckBoxUI;
@@ -47,18 +48,21 @@ import net.runelite.client.ui.FontManager;
 /** Component-local styling: the RuneLite client's own look and feel is untouched. */
 final class BestDpsTheme
 {
-	static final Color BG = new Color(0x191C1E);
-	static final Color PANEL = new Color(0x212628);
-	static final Color RAISED = new Color(0x2A3033);
-	static final Color LINE = new Color(0x394246);
-	static final Color TEXT = new Color(0xEBEEE7);
-	static final Color MUTED = new Color(0xA3B0AA);
-	static final Color ACCENT = new Color(0xD8B56C);
-	static final Color POSITIVE = new Color(0x8EB9A3);
-	static final Color NEGATIVE = new Color(0xDF9A91);
+	static final Color BG = new Color(0x242320);
+	static final Color PANEL = new Color(0x302E2A);
+	static final Color RAISED = new Color(0x3B3832);
+	static final Color LINE = new Color(0x5A5145);
+	static final Color TEXT = new Color(0xEEE9DC);
+	static final Color MUTED = new Color(0xBBB1A0);
+	static final Color ACCENT = new Color(0xFF981F);
+	static final Color POSITIVE = new Color(0x98C477);
+	static final Color NEGATIVE = new Color(0xE58C75);
+	private static final Color HIGHLIGHT = new Color(0x736653);
+	private static final Color SHADOW = new Color(0x171614);
+	private static final Color SELECTED = new Color(0x514633);
 	static final Font BODY = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
-	static final Font SMALL = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
-	static final Font TITLE = FontManager.getRunescapeBoldFont().deriveFont(24f);
+	static final Font SMALL = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
+	static final Font TITLE = FontManager.getRunescapeBoldFont().deriveFont(20f);
 	static final Font DATA = new Font(Font.MONOSPACED, Font.PLAIN, 13);
 	private static final String STYLED = "bestDps.styled";
 	private static final String PRIMARY = "bestDps.primary";
@@ -129,10 +133,10 @@ final class BestDpsTheme
 					public void paint(Graphics graphics, JComponent target)
 					{
 						AbstractButton current = (AbstractButton) target;
-						Color fill = primary ? ACCENT : RAISED;
-						if (!current.isEnabled()) { fill = RAISED; }
-						else if (current.getModel().isPressed()) { fill = primary ? ACCENT.darker() : LINE; }
-						else if (current.getModel().isRollover()) { fill = primary ? new Color(0xE5C681) : new Color(0x343D40); }
+						Color fill = RAISED;
+						if (!current.isEnabled()) { fill = PANEL; }
+						else if (current.getModel().isPressed()) { fill = BG; }
+						else if (current.getModel().isRollover()) { fill = new Color(0x494338); }
 						graphics.setColor(fill);
 						graphics.fillRect(0, 0, target.getWidth(), target.getHeight());
 						super.paint(graphics, target);
@@ -148,13 +152,13 @@ final class BestDpsTheme
 					}
 				});
 				button.setFont(BODY.deriveFont(Font.BOLD));
-				button.setForeground(primary ? BG : TEXT);
-				button.setBackground(primary ? ACCENT : RAISED);
+				button.setForeground(primary ? ACCENT : TEXT);
+				button.setBackground(RAISED);
 				button.setOpaque(false);
 				button.setContentAreaFilled(false);
 				button.setFocusPainted(false);
 				button.setRolloverEnabled(true);
-				button.setBorder(new FocusBorder(6, 12));
+				button.setBorder(new FocusBorder(5, 10));
 				button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 				controlHeight(button);
 				watchFocus(button);
@@ -163,13 +167,13 @@ final class BestDpsTheme
 			{
 				JTextComponent field = (JTextComponent) component;
 				field.setFont(BODY);
-				field.setBackground(RAISED);
+				field.setBackground(BG);
 				field.setForeground(TEXT);
 				field.setCaretColor(ACCENT);
-				field.setSelectionColor(LINE);
+				field.setSelectionColor(SELECTED);
 				field.setSelectedTextColor(TEXT);
 				field.setDisabledTextColor(MUTED);
-				field.setBorder(new FocusBorder(6, 9));
+				field.setBorder(new FocusBorder(5, 8));
 				if (component instanceof JTextField) { controlHeight(field); }
 				watchFocus(field);
 			}
@@ -199,7 +203,7 @@ final class BestDpsTheme
 					}
 				});
 				spinner.setFont(BODY);
-				spinner.setBackground(RAISED);
+				spinner.setBackground(BG);
 				spinner.setBorder(new FocusBorder(2, 5));
 				controlHeight(spinner);
 			}
@@ -208,7 +212,7 @@ final class BestDpsTheme
 				JScrollPane scroll = (JScrollPane) component;
 				scroll.setBackground(PANEL);
 				scroll.getViewport().setBackground(PANEL);
-				scroll.setBorder(BorderFactory.createLineBorder(LINE));
+				scroll.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED, HIGHLIGHT, LINE, SHADOW, BG));
 				scroll.getVerticalScrollBar().setUnitIncrement(18);
 			}
 			else if (component instanceof JScrollBar)
@@ -220,9 +224,9 @@ final class BestDpsTheme
 					protected void configureScrollBarColors()
 					{
 						thumbColor = LINE;
-						thumbDarkShadowColor = LINE;
-						thumbHighlightColor = LINE;
-						thumbLightShadowColor = LINE;
+						thumbDarkShadowColor = SHADOW;
+						thumbHighlightColor = HIGHLIGHT;
+						thumbLightShadowColor = RAISED;
 						trackColor = BG;
 					}
 
@@ -233,7 +237,7 @@ final class BestDpsTheme
 					protected JButton createIncreaseButton(int orientation) { return hiddenArrow(); }
 				});
 				bar.setPreferredSize(bar.getOrientation() == SwingConstants.VERTICAL
-					? new Dimension(10, 32) : new Dimension(32, 10));
+					? new Dimension(12, 31) : new Dimension(31, 12));
 			}
 		}
 		if (component instanceof Container)
@@ -260,19 +264,20 @@ final class BestDpsTheme
 		if (original == null) { original = combo.getRenderer(); }
 		final ListCellRenderer renderer = original;
 		((JComboBox) combo).setRenderer((JList list, Object value, int index, boolean selected, boolean focus) -> {
+			list.setFont(combo.getFont());
 			Component cell = renderer.getListCellRendererComponent(list, value, index, selected, focus);
-			cell.setFont(BODY);
+			cell.setFont(combo.getFont());
 			cell.setForeground(combo.isEnabled() ? TEXT : MUTED);
-			cell.setBackground(selected ? LINE : RAISED);
+			cell.setBackground(selected ? SELECTED : BG);
 			if (cell instanceof JComponent)
 			{
 				((JComponent) cell).setOpaque(true);
-				((JComponent) cell).setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+				((JComponent) cell).setBorder(BorderFactory.createEmptyBorder(4, 7, 4, 7));
 			}
 			return cell;
 		});
 		combo.setFont(BODY);
-		combo.setBackground(RAISED);
+		combo.setBackground(BG);
 		combo.setForeground(TEXT);
 		combo.setBorder(new FocusBorder(0, 0));
 		combo.setMaximumRowCount(14);
@@ -282,8 +287,8 @@ final class BestDpsTheme
 
 	private static JButton arrow(int direction)
 	{
-		JButton button = new BasicArrowButton(direction, RAISED, RAISED, MUTED, RAISED);
-		button.setBorder(BorderFactory.createEmptyBorder());
+		JButton button = new BasicArrowButton(direction, RAISED, SHADOW, TEXT, HIGHLIGHT);
+		button.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
 		button.setFocusable(false);
 		button.putClientProperty(STYLED, Boolean.TRUE);
 		return button;
@@ -302,9 +307,9 @@ final class BestDpsTheme
 	private static void controlHeight(JComponent component)
 	{
 		Dimension preferred = component.getPreferredSize();
-		component.setPreferredSize(new Dimension(preferred.width, Math.max(32, preferred.height)));
+		component.setPreferredSize(new Dimension(preferred.width, 31));
 		Dimension minimum = component.getMinimumSize();
-		component.setMinimumSize(new Dimension(minimum.width, 32));
+		component.setMinimumSize(new Dimension(minimum.width, 31));
 	}
 
 	private static void watchFocus(JComponent component)
@@ -342,12 +347,12 @@ final class BestDpsTheme
 		}
 
 		@Override
-		public Insets getBorderInsets(Component component) { return new Insets(vertical + 1, horizontal + 1, vertical + 1, horizontal + 1); }
+		public Insets getBorderInsets(Component component) { return new Insets(vertical + 2, horizontal + 2, vertical + 2, horizontal + 2); }
 
 		@Override
 		public Insets getBorderInsets(Component component, Insets insets)
 		{
-			insets.set(vertical + 1, horizontal + 1, vertical + 1, horizontal + 1);
+			insets.set(vertical + 2, horizontal + 2, vertical + 2, horizontal + 2);
 			return insets;
 		}
 
@@ -359,10 +364,20 @@ final class BestDpsTheme
 				&& SwingUtilities.isDescendingFrom(focus, (Container) component);
 			if (component instanceof JCheckBox && !focused) { return; }
 			Graphics2D g = (Graphics2D) graphics.create();
-			boolean primary = component instanceof JComponent && Boolean.TRUE.equals(((JComponent) component).getClientProperty(PRIMARY));
-			g.setColor(focused ? primary ? TEXT : ACCENT : LINE);
-			g.setStroke(new BasicStroke(focused ? 2f : 1f));
-			g.drawRect(x + 1, y + 1, Math.max(0, width - 3), Math.max(0, height - 3));
+			boolean raised = component instanceof JButton && !((JButton) component).getModel().isPressed();
+			g.setColor(SHADOW);
+			g.drawRect(x, y, Math.max(0, width - 1), Math.max(0, height - 1));
+			g.setColor(raised ? HIGHLIGHT : SHADOW);
+			g.drawLine(x + 1, y + 1, x + width - 2, y + 1);
+			g.drawLine(x + 1, y + 1, x + 1, y + height - 2);
+			g.setColor(raised ? SHADOW : LINE);
+			g.drawLine(x + 1, y + height - 2, x + width - 2, y + height - 2);
+			g.drawLine(x + width - 2, y + 1, x + width - 2, y + height - 2);
+			if (focused)
+			{
+				g.setColor(ACCENT);
+				g.drawRect(x + 2, y + 2, Math.max(0, width - 5), Math.max(0, height - 5));
+			}
 			g.dispose();
 		}
 	}
@@ -381,13 +396,16 @@ final class BestDpsTheme
 			AbstractButton button = (AbstractButton) component;
 			Graphics2D g = (Graphics2D) graphics.create();
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g.setColor(button.isSelected() && button.isEnabled() ? ACCENT : RAISED);
+			g.setColor(BG);
 			g.fillRect(x + 1, y + 1, 14, 14);
-			g.setColor(button.isEnabled() ? MUTED : LINE);
+			g.setColor(SHADOW);
 			g.drawRect(x + 1, y + 1, 14, 14);
+			g.setColor(LINE);
+			g.drawLine(x + 2, y + 14, x + 14, y + 14);
+			g.drawLine(x + 14, y + 2, x + 14, y + 14);
 			if (button.isSelected())
 			{
-				g.setColor(button.isEnabled() ? BG : MUTED);
+				g.setColor(button.isEnabled() ? ACCENT : MUTED);
 				g.setStroke(new BasicStroke(2f));
 				g.drawLine(x + 4, y + 8, x + 7, y + 11);
 				g.drawLine(x + 7, y + 11, x + 12, y + 5);

@@ -57,6 +57,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
@@ -70,17 +71,16 @@ final class BestDpsResultsPanel extends JPanel
 	private final Map<Integer, ImageIcon> icons = new HashMap<>();
 	private final DefaultListModel<DpsResult> model = new DefaultListModel<>();
 	private final JList<DpsResult> alternatives = new JList<>(model);
-	private final JLabel status = label("Your next setup", BestDpsTheme.BODY.deriveFont(Font.BOLD), BestDpsTheme.TEXT);
+	private final JLabel status = label("DPS results", BestDpsTheme.BODY.deriveFont(Font.BOLD), BestDpsTheme.TEXT);
 	private final JLabel stateNote = label("", BestDpsTheme.SMALL, BestDpsTheme.MUTED);
 	private final JProgressBar progress = new JProgressBar();
 	private final CardLayout cards = new CardLayout();
 	private final JPanel workspace = panel(cards);
 	private final JPanel empty = panel(new GridBagLayout());
-	private final JPanel details = panel(new BorderLayout(0, 12));
+	private final JPanel details = panel(new BorderLayout(0, 4));
 	private final JSplitPane split;
 	private final NumberFormat integers = NumberFormat.getIntegerInstance(Locale.UK);
 	private OptimizationRequest request;
-	private double bestDps;
 	private long elapsedMillis;
 	private boolean searching;
 	private boolean stale;
@@ -88,14 +88,14 @@ final class BestDpsResultsPanel extends JPanel
 
 	BestDpsResultsPanel(ItemManager itemManager)
 	{
-		super(new BorderLayout(0, 12));
+		super(new BorderLayout(0, 7));
 		this.itemManager = itemManager;
 		setBackground(BestDpsTheme.PANEL);
 		setMinimumSize(new Dimension(440, 0));
-		setBorder(BorderFactory.createEmptyBorder(16, 16, 12, 16));
-		JPanel heading = panel(new BorderLayout(8, 5));
+		setBorder(BorderFactory.createEmptyBorder(8, 8, 6, 8));
+		JPanel heading = panel(new BorderLayout(12, 0));
 		heading.add(status, BorderLayout.WEST);
-		heading.add(stateNote, BorderLayout.SOUTH);
+		heading.add(stateNote, BorderLayout.CENTER);
 		progress.setIndeterminate(true);
 		progress.setPreferredSize(new Dimension(76, 4));
 		progress.setForeground(BestDpsTheme.ACCENT);
@@ -105,11 +105,11 @@ final class BestDpsResultsPanel extends JPanel
 		heading.add(progress, BorderLayout.EAST);
 		add(heading, BorderLayout.NORTH);
 		alternatives.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		alternatives.setFixedCellHeight(90);
+		alternatives.setFixedCellHeight(46);
 		alternatives.setBackground(BestDpsTheme.PANEL);
 		alternatives.setForeground(BestDpsTheme.TEXT);
 		alternatives.setCellRenderer(new RankedRenderer());
-		alternatives.setVisibleRowCount(4);
+		alternatives.setVisibleRowCount(8);
 		alternatives.getAccessibleContext().setAccessibleName("Ranked gear setups, highest DPS first");
 		alternatives.addListSelectionListener(event -> {
 			if (!event.getValueIsAdjusting() && alternatives.getSelectedValue() != null)
@@ -117,10 +117,10 @@ final class BestDpsResultsPanel extends JPanel
 				showSelected(alternatives.getSelectedValue());
 			}
 		});
-		JPanel ranking = panel(new BorderLayout(0, 10));
-		ranking.add(label("Setups found", BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.NORTH);
+		JPanel ranking = panel(new BorderLayout(0, 4));
+		ranking.add(label("Ranked setups", BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.NORTH);
 		ranking.add(scroll(alternatives), BorderLayout.CENTER);
-		ranking.setMinimumSize(new Dimension(220, 0));
+		ranking.setMinimumSize(new Dimension(270, 0));
 		details.setMinimumSize(new Dimension(0, 0));
 		split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, ranking, details);
 		split.setUI(new BasicSplitPaneUI()
@@ -147,10 +147,10 @@ final class BestDpsResultsPanel extends JPanel
 		});
 		split.setBorder(BorderFactory.createEmptyBorder());
 		split.setBackground(BestDpsTheme.PANEL);
-		split.setDividerSize(16);
+		split.setDividerSize(12);
 		split.setContinuousLayout(true);
 		split.setResizeWeight(0);
-		split.setDividerLocation(254);
+		split.setDividerLocation(324);
 		split.setMinimumSize(new Dimension(0, 0));
 		workspace.add(empty, "empty");
 		workspace.add(split, "results");
@@ -165,11 +165,11 @@ final class BestDpsResultsPanel extends JPanel
 				if (split.getOrientation() != orientation)
 				{
 					split.setOrientation(orientation);
-					split.setDividerLocation(narrow ? 154 : 254);
+					split.setDividerLocation(narrow ? 144 : 324);
 				}
 			}
 		});
-		clear("Find a setup for your next fight", "Choose an NPC and your gear source, then select Find best gear. Open your bank first to include its contents.");
+		clear("No results", "Select an NPC and gear source, then press Compare gear. Open the bank to include stored items.");
 	}
 
 	void showResults(List<DpsResult> results, OptimizationRequest request, long elapsedMillis)
@@ -182,26 +182,24 @@ final class BestDpsResultsPanel extends JPanel
 		}
 		if (results == null || results.isEmpty() || request == null)
 		{
-			clear("No usable setup found", "Check the NPC phase, combat style and gear source. Open your bank, or increase the budget, then select Find best gear again.");
+			clear("No usable setup found", "Check the NPC phase, combat style and gear source. Open your bank, or increase the budget, then select Compare gear again.");
 			return;
 		}
 		this.request = request;
 		this.elapsedMillis = Math.max(0, elapsedMillis);
 		searching = false;
 		stale = false;
-		bestDps = 0;
 		model.clear();
 		for (DpsResult result : results)
 		{
 			if (result != null && result.getLoadout() != null)
 			{
 				model.addElement(result);
-				bestDps = Math.max(bestDps, result.getDps());
 			}
 		}
 		if (model.isEmpty())
 		{
-			clear("No usable setup found", "Choose another style or adjust the budget, then select Find best gear again.");
+			clear("No usable setup found", "Choose another style or adjust the budget, then select Compare gear again.");
 			return;
 		}
 		cards.show(workspace, "results");
@@ -239,11 +237,11 @@ final class BestDpsResultsPanel extends JPanel
 		this.searching = searching;
 		if (searching && model.isEmpty())
 		{
-			showEmpty("Finding your next setup", "Comparing weapons, equipment sets and affordable upgrades for this NPC. You can cancel the search at any time.");
+			showEmpty("Calculating DPS", "Comparing eligible gear for the selected NPC. Cancel stops the search.");
 		}
 		else if (wasSearching && !searching && model.isEmpty())
 		{
-			showEmpty("Ready to search", "Check the selected NPC and gear source, then select Find best gear to compare setups.");
+			showEmpty("Ready to search", "Check the selected NPC and gear source, then select Compare gear to compare setups.");
 		}
 		updateStatus();
 	}
@@ -270,17 +268,17 @@ final class BestDpsResultsPanel extends JPanel
 		else if (stale)
 		{
 			status.setText("Inputs changed");
-			stateNote.setText("Showing the previous search · Select Find best gear to refresh");
+			stateNote.setText("Previous search · Best found, not proven BiS · Compare gear to refresh");
 		}
 		else if (!model.isEmpty())
 		{
-			status.setText(model.size() + (model.size() == 1 ? " setup found" : " setups found"));
-			stateNote.setText("Best found · " + format(elapsedMillis / 1000.0, 2) + " s · Select a setup to compare");
+			status.setText("Best found · not proven BiS");
+			stateNote.setText(model.size() + (model.size() == 1 ? " setup" : " setups") + " · " + format(elapsedMillis / 1000.0, 2) + " s");
 		}
 		else
 		{
-			status.setText("Your next setup");
-			stateNote.setText("Equipment, trade suggestions and combat assumptions in one place");
+			status.setText("DPS results");
+			stateNote.setText("Normal attacks · Selected NPC phase");
 		}
 		stateNote.setForeground(stale ? BestDpsTheme.ACCENT : BestDpsTheme.MUTED);
 	}
@@ -288,14 +286,16 @@ final class BestDpsResultsPanel extends JPanel
 	private void showEmpty(String title, String detail)
 	{
 		empty.removeAll();
-		JPanel message = panel(new BorderLayout(0, 14));
-		message.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 0, 0, 0, BestDpsTheme.ACCENT), BorderFactory.createEmptyBorder(24, 4, 8, 4)));
-		message.add(text(title, BestDpsTheme.BODY.deriveFont(Font.BOLD, 22), BestDpsTheme.TEXT), BorderLayout.NORTH);
+		JPanel message = panel(new BorderLayout(0, 6));
+		message.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+		message.add(text(title, BestDpsTheme.BODY.deriveFont(Font.BOLD, 14), BestDpsTheme.TEXT), BorderLayout.NORTH);
 		message.add(text(detail, BestDpsTheme.BODY, BestDpsTheme.MUTED), BorderLayout.CENTER);
 		GridBagConstraints c = new GridBagConstraints();
 		c.weightx = 1;
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.insets = new Insets(20, 28, 90, 28);
+		c.weighty = 1;
+		c.anchor = GridBagConstraints.NORTHWEST;
+		c.insets = new Insets(12, 8, 8, 8);
 		empty.add(message, c);
 		cards.show(workspace, "empty");
 		empty.revalidate();
@@ -305,35 +305,52 @@ final class BestDpsResultsPanel extends JPanel
 	private void showSelected(DpsResult result)
 	{
 		details.removeAll();
-		JPanel summary = panel(new BorderLayout(0, 9));
-		JPanel title = panel(new BorderLayout(8, 3));
+		JPanel summary = panel(new BorderLayout(0, 3));
+		JPanel title = panel(new BorderLayout(6, 0));
 		JLabel icon = new JLabel(icon(result.getLoadout().getWeapon()));
-		icon.setPreferredSize(new Dimension(40, 40));
+		icon.setPreferredSize(new Dimension(36, 32));
 		title.add(icon, BorderLayout.WEST);
-		JPanel names = panel(new BorderLayout(0, 3));
-		JLabel weaponLabel = label(weaponName(result), BestDpsTheme.BODY.deriveFont(Font.BOLD, 17), BestDpsTheme.TEXT);
+		JPanel names = panel(new BorderLayout(0, 0));
+		JLabel weaponLabel = label(weaponName(result), BestDpsTheme.BODY.deriveFont(Font.BOLD, 15), BestDpsTheme.TEXT);
 		weaponLabel.setToolTipText(tooltip(weaponName(result), result.getSpellName()));
 		names.add(weaponLabel, BorderLayout.NORTH);
 		String attack = result.getAttackType() + " · " + result.getAttackSpeed() + " ticks";
 		if (!result.getSpellName().isEmpty()) { attack += " · " + result.getSpellName(); }
-		names.add(text(attack, BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.CENTER);
+		JLabel attackLabel = label(attack, BestDpsTheme.SMALL, BestDpsTheme.MUTED);
+		attackLabel.setToolTipText(tooltip(weaponName(result), attack));
+		names.add(attackLabel, BorderLayout.CENTER);
 		title.add(names, BorderLayout.CENTER);
 		summary.add(title, BorderLayout.NORTH);
-		JPanel metrics = panel(new GridLayout(1, 4, 10, 0));
+		JPanel metrics = panel(new GridLayout(1, 4, 12, 0));
 		metrics.add(metric("DPS", format(result.getDps(), 3), null, true));
 		metrics.add(metric("Accuracy", format(result.getAccuracy() * 100, 1) + "%", null, false));
 		metrics.add(metric("Max hit", Integer.toString(result.getMaxHit()), null, false));
 		metrics.add(metric("Cash needed", compact(cash(result)), gp(cash(result)), false));
+		metrics.addComponentListener(new ComponentAdapter()
+		{
+			@Override
+			public void componentResized(ComponentEvent event)
+			{
+				int rows = metrics.getWidth() < 620 ? 2 : 1;
+				if (((GridLayout) metrics.getLayout()).getRows() != rows)
+				{
+					metrics.setLayout(new GridLayout(rows, rows == 1 ? 4 : 2, 12, 0));
+					summary.revalidate();
+				}
+			}
+		});
 		summary.add(metrics, BorderLayout.CENTER);
-		String gain = "Selected NPC phase · Continuous attacks";
+		JPanel notes = panel(new BorderLayout(0, 1));
 		if (result.getBaselineDps() > 0)
 		{
 			double percent = (result.getDps() / result.getBaselineDps() - 1) * 100;
-			gain = (percent > 0 ? "+" : "") + format(percent, 2) + "% DPS vs the no-sale search";
+			String gain = (percent > 0 ? "+" : "") + format(percent, 2) + "% DPS vs the no-sale search";
+			JLabel gainLabel = label(gain, BestDpsTheme.SMALL, result.getDps() > result.getBaselineDps() ? BestDpsTheme.POSITIVE : BestDpsTheme.MUTED);
+			gainLabel.setToolTipText("Same owned items and cash budget, with selling disabled. This is not a comparison with currently worn gear.");
+			notes.add(gainLabel, BorderLayout.NORTH);
 		}
-		JLabel gainLabel = label(gain, BestDpsTheme.SMALL, result.getBaselineDps() > 0 && result.getDps() > result.getBaselineDps() ? BestDpsTheme.POSITIVE : BestDpsTheme.MUTED);
-		gainLabel.setToolTipText("The no-sale search uses the same owned items and cash budget. It is not a comparison with your currently worn gear.");
-		summary.add(gainLabel, BorderLayout.SOUTH);
+		notes.add(coverageLabel(result), BorderLayout.SOUTH);
+		summary.add(notes, BorderLayout.SOUTH);
 		details.add(summary, BorderLayout.NORTH);
 		JTabbedPane tabs = new JTabbedPane();
 		tabs.setFont(BestDpsTheme.BODY);
@@ -353,13 +370,34 @@ final class BestDpsResultsPanel extends JPanel
 
 	private JPanel metric(String title, String value, String tooltip, boolean primary)
 	{
-		JPanel metric = panel(new BorderLayout(0, 4));
-		metric.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-		metric.add(label(title, BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.NORTH);
-		JLabel number = label(value, BestDpsTheme.DATA.deriveFont(primary ? 26f : 20f), primary ? BestDpsTheme.ACCENT : BestDpsTheme.TEXT);
+		JPanel metric = panel(new BorderLayout(5, 0));
+		metric.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
+		metric.add(label(title, BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.WEST);
+		JLabel number = label(value, BestDpsTheme.DATA.deriveFont(primary ? 18f : 15f), primary ? BestDpsTheme.ACCENT : BestDpsTheme.TEXT);
 		number.setToolTipText(tooltip);
+		number.setHorizontalAlignment(SwingConstants.RIGHT);
 		metric.add(number, BorderLayout.CENTER);
 		return metric;
+	}
+
+	private JLabel coverageLabel(DpsResult result)
+	{
+		List<String> warnings = new ArrayList<>();
+		List<String> encounter = EncounterRules.warnings(request.getMonster(), request.getEncounterContext());
+		for (String warning : encounter)
+		{
+			if (!warning.startsWith("Sustained attacks in the selected phase;")) { warnings.add(warning); }
+		}
+		warnings.addAll(CombatMechanics.warnings(result.getLoadout()));
+		String warning = warnings.isEmpty() ? "Normal attacks only; movement, mechanics and specials excluded." : warnings.get(0);
+		String prefix = warnings.isEmpty() ? "Model limits: " : "Model limits (" + warnings.size() + "): ";
+		JLabel coverage = label(prefix + warning, BestDpsTheme.SMALL, BestDpsTheme.ACCENT);
+		StringBuilder tooltip = new StringBuilder("<html><b>Model limits · full details in Assumptions</b>");
+		for (String item : warnings) { tooltip.append("<br>").append(escape(item)); }
+		tooltip.append("<br>").append(escape(encounter.isEmpty() ? warning : encounter.get(0))).append("</html>");
+		coverage.setToolTipText(tooltip.toString());
+		coverage.getAccessibleContext().setAccessibleDescription("Full combat and encounter limits are listed in the Assumptions tab.");
+		return coverage;
 	}
 
 	private ScrollContent tradeContent(DpsResult result)
@@ -437,11 +475,11 @@ final class BestDpsResultsPanel extends JPanel
 	private JPanel itemRow(GearItem item, String name, String note, String amount, String amountTooltip)
 	{
 		JPanel row = panel(new BorderLayout(8, 0));
-		row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BestDpsTheme.LINE), BorderFactory.createEmptyBorder(2, 0, 2, 0)));
+		row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BestDpsTheme.LINE));
 		JLabel icon = new JLabel(icon(item));
-		icon.setPreferredSize(new Dimension(32, 34));
+		icon.setPreferredSize(new Dimension(36, 32));
 		row.add(icon, BorderLayout.WEST);
-		JPanel names = panel(new BorderLayout(0, 3));
+		JPanel names = panel(new BorderLayout(0, 0));
 		JLabel nameLabel = label(name, BestDpsTheme.BODY, BestDpsTheme.TEXT);
 		nameLabel.setToolTipText(tooltip(name, note));
 		names.add(nameLabel, BorderLayout.NORTH);
@@ -453,7 +491,7 @@ final class BestDpsResultsPanel extends JPanel
 		JLabel value = label(amount, BestDpsTheme.DATA.deriveFont(11f), BestDpsTheme.MUTED);
 		value.setToolTipText(amountTooltip);
 		row.add(value, BorderLayout.EAST);
-		row.setMinimumSize(new Dimension(0, 40));
+		row.setMinimumSize(new Dimension(0, 33));
 		return row;
 	}
 
@@ -556,44 +594,46 @@ final class BestDpsResultsPanel extends JPanel
 
 	private final class RankedRenderer extends JPanel implements ListCellRenderer<DpsResult>
 	{
-		private DpsResult result;
-		private boolean selected;
 		private boolean focused;
-		private final JLabel rank = label("", BestDpsTheme.DATA, BestDpsTheme.MUTED);
-		private final JLabel name = label("", BestDpsTheme.BODY.deriveFont(Font.BOLD), BestDpsTheme.TEXT);
+		private final JLabel rank = label("", BestDpsTheme.DATA.deriveFont(11f), BestDpsTheme.MUTED);
+		private final JLabel itemIcon = new JLabel();
+		private final JLabel name = label("", BestDpsTheme.BODY, BestDpsTheme.TEXT);
 		private final JLabel style = label("", BestDpsTheme.SMALL, BestDpsTheme.MUTED);
-		private final JLabel dps = label("", BestDpsTheme.DATA.deriveFont(18f), BestDpsTheme.ACCENT);
-		private final JLabel cost = label("", BestDpsTheme.SMALL, BestDpsTheme.MUTED);
+		private final JLabel dps = label("", BestDpsTheme.DATA.deriveFont(13f), BestDpsTheme.ACCENT);
+		private final JLabel cost = label("", BestDpsTheme.DATA.deriveFont(11f), BestDpsTheme.MUTED);
 
 		private RankedRenderer()
 		{
-			super(new BorderLayout(8, 7));
-			setBorder(BorderFactory.createEmptyBorder(9, 11, 13, 11));
-			add(rank, BorderLayout.WEST);
-			JPanel body = panel(new BorderLayout(0, 7));
-			body.setOpaque(false);
-			JPanel words = panel(new BorderLayout(0, 4));
+			super(new BorderLayout(6, 0));
+			setBorder(BorderFactory.createEmptyBorder(5, 4, 5, 5));
+			JPanel identity = panel(new BorderLayout(4, 0));
+			identity.setOpaque(false);
+			rank.setPreferredSize(new Dimension(18, 16));
+			itemIcon.setPreferredSize(new Dimension(36, 32));
+			identity.add(rank, BorderLayout.WEST);
+			identity.add(itemIcon, BorderLayout.CENTER);
+			add(identity, BorderLayout.WEST);
+			JPanel words = panel(new BorderLayout(0, 0));
 			words.setOpaque(false);
 			words.add(name, BorderLayout.NORTH);
 			words.add(style, BorderLayout.SOUTH);
-			body.add(words, BorderLayout.NORTH);
+			add(words, BorderLayout.CENTER);
 			JPanel values = panel(new BorderLayout());
 			values.setOpaque(false);
-			values.add(dps, BorderLayout.WEST);
-			values.add(cost, BorderLayout.EAST);
-			body.add(values, BorderLayout.SOUTH);
-			add(body, BorderLayout.CENTER);
+			dps.setHorizontalAlignment(SwingConstants.RIGHT);
+			cost.setHorizontalAlignment(SwingConstants.RIGHT);
+			values.add(dps, BorderLayout.NORTH);
+			values.add(cost, BorderLayout.SOUTH);
+			add(values, BorderLayout.EAST);
 		}
 
 		@Override
 		public Component getListCellRendererComponent(JList<? extends DpsResult> list, DpsResult value, int index, boolean selected, boolean cellHasFocus)
 		{
-			this.result = value;
-			this.selected = selected;
 			this.focused = cellHasFocus;
 			setBackground(selected ? BestDpsTheme.RAISED : BestDpsTheme.PANEL);
-			rank.setText(String.format(Locale.UK, "%02d", index + 1));
-			rank.setVerticalAlignment(SwingConstants.TOP);
+			rank.setText(Integer.toString(index + 1));
+			itemIcon.setIcon(icon(value.getLoadout().getWeapon()));
 			name.setText(weaponName(value));
 			style.setText(value.getAttackType() + (value.getSpellName().isEmpty() ? "" : " · " + value.getSpellName()));
 			dps.setText(format(value.getDps(), 3) + " DPS");
@@ -609,17 +649,7 @@ final class BestDpsResultsPanel extends JPanel
 		{
 			super.paintComponent(graphics);
 			graphics.setColor(BestDpsTheme.LINE);
-			graphics.fillRect(11, getHeight() - 9, Math.max(0, getWidth() - 22), 2);
-			if (result != null && bestDps > 0)
-			{
-				graphics.setColor(selected ? BestDpsTheme.ACCENT : BestDpsTheme.MUTED);
-				graphics.fillRect(11, getHeight() - 9, (int) ((getWidth() - 22) * Math.min(1, result.getDps() / bestDps)), 2);
-			}
-			if (selected)
-			{
-				graphics.setColor(BestDpsTheme.ACCENT);
-				graphics.fillRect(0, 0, 3, getHeight());
-			}
+			graphics.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
 			if (focused)
 			{
 				graphics.setColor(BestDpsTheme.ACCENT);
@@ -637,11 +667,11 @@ final class BestDpsResultsPanel extends JPanel
 		private EquipmentContent(DpsResult result)
 		{
 			setLayout(new GridBagLayout());
-			figure = panel(new BorderLayout(0, 8));
+			figure = panel(new BorderLayout(0, 4));
 			JPanel figureCenter = panel(new GridBagLayout());
 			figureCenter.add(new EquipmentFigure(result.getLoadout()));
 			figure.add(figureCenter, BorderLayout.NORTH);
-			figure.add(text("Gold frame: owned. Hover for the item name and price.", BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.SOUTH);
+			figure.add(text("Orange label: owned. Hover for item details.", BestDpsTheme.SMALL, BestDpsTheme.MUTED), BorderLayout.SOUTH);
 			rows = panel(new GridLayout(0, 1));
 			for (GearSlot slot : GearSlot.values())
 			{
@@ -706,9 +736,9 @@ final class BestDpsResultsPanel extends JPanel
 				GearItem item = loadout.get(slots[i]);
 				boolean owned = item != null && request.getOwnedItems().owns(item.getId());
 				JPanel tile = panel(new BorderLayout(0, 0));
-				tile.setBackground(BestDpsTheme.RAISED);
-				tile.setBorder(BorderFactory.createLineBorder(owned ? BestDpsTheme.ACCENT : BestDpsTheme.LINE));
-				tile.setBounds(positions[i][0], positions[i][1], 46, 46);
+				tile.setBackground(BestDpsTheme.BG);
+				tile.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED, BestDpsTheme.RAISED.brighter(), BestDpsTheme.RAISED, BestDpsTheme.BG, BestDpsTheme.BG.darker()));
+				tile.setBounds(positions[i][0], positions[i][1], 46, 48);
 				JLabel image = new JLabel(icon(item), SwingConstants.CENTER);
 				String title = slotName(slots[i], loadout);
 				String itemName = item == null ? "Empty" : item.getName();
@@ -753,7 +783,7 @@ final class BestDpsResultsPanel extends JPanel
 		{
 			setLayout(new WrappingColumn());
 			setBackground(BestDpsTheme.PANEL);
-			setBorder(BorderFactory.createEmptyBorder(16, 0, 8, 10));
+			setBorder(BorderFactory.createEmptyBorder(8, 0, 6, 8));
 			setMinimumSize(new Dimension(0, 0));
 		}
 
@@ -825,7 +855,7 @@ final class BestDpsResultsPanel extends JPanel
 		protected void installDefaults()
 		{
 			super.installDefaults();
-			tabInsets = new Insets(9, 12, 9, 12);
+			tabInsets = new Insets(5, 10, 5, 10);
 			contentBorderInsets = new Insets(1, 0, 0, 0);
 			tabAreaInsets = new Insets(0, 0, 0, 0);
 			selectedTabPadInsets = new Insets(0, 0, 0, 0);
@@ -833,16 +863,19 @@ final class BestDpsResultsPanel extends JPanel
 		@Override
 		protected void paintTabBackground(Graphics g, int placement, int index, int x, int y, int width, int height, boolean selected)
 		{
-			g.setColor(BestDpsTheme.PANEL);
+			g.setColor(selected ? BestDpsTheme.RAISED : BestDpsTheme.PANEL);
 			g.fillRect(x, y, width, height);
-			if (selected)
-			{
-				g.setColor(BestDpsTheme.ACCENT);
-				g.fillRect(x + 10, y + height - 3, width - 20, 2);
-			}
 		}
 		@Override
-		protected void paintTabBorder(Graphics g, int placement, int index, int x, int y, int width, int height, boolean selected) { }
+		protected void paintTabBorder(Graphics g, int placement, int index, int x, int y, int width, int height, boolean selected)
+		{
+			g.setColor(BestDpsTheme.LINE);
+			g.drawLine(x, y, x + width - 1, y);
+			g.drawLine(x, y, x, y + height - 1);
+			g.setColor(BestDpsTheme.BG.darker());
+			g.drawLine(x + width - 1, y, x + width - 1, y + height - 1);
+			if (!selected) { g.drawLine(x, y + height - 1, x + width - 1, y + height - 1); }
+		}
 		@Override
 		protected void paintFocusIndicator(Graphics g, int placement, Rectangle[] rectangles, int index, Rectangle icon, Rectangle text, boolean selected)
 		{

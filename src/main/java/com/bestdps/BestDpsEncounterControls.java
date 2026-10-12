@@ -93,7 +93,7 @@ final class BestDpsEncounterControls extends JPanel
 		effects.add(note("Set effects for this phase. Charged gear assumes usable charges."));
 		effects.add(Box.createVerticalStrut(8));
 		diaryBox.setToolTipText("Kandarin hard diary complete: increases enchanted bolt activation chance.");
-		liveHpBox.setToolTipText("Uses your current in-game HP when Use my levels is enabled.");
+		liveHpBox.setToolTipText("Uses your current in-game HP when My levels & unlocks is enabled.");
 
 		add(disclosure("Encounter settings", encounterSummary, encounter));
 		add(Box.createVerticalStrut(8));

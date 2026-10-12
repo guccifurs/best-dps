@@ -11,21 +11,21 @@ raid, combat, level, prayer and budget assumptions.
    after changing bank contents on another client.
 2. Search by NPC name or ID and choose its variant. For changing protection prayers,
    choose the style for the vulnerable phase.
-3. Under **Build from**, choose owned gear, owned gear plus cash, or buying a setup. Cash
+3. Under **Gear**, choose owned gear, owned gear plus cash, or buying a setup. Cash
    means the amount available to spend, excluding possible gear-sale proceeds.
    `k`, `m` and `b` suffixes work, up to 2,147,483,647 cash GP.
-4. Expand **Encounter settings** for ToA invocation/path levels, party size, CoX challenge
+4. Open **Encounter & effects**, then expand **Encounter settings** for ToA invocation/path levels, party size, CoX challenge
    mode and party stats, target HP, or remaining Defence after a drain.
 5. Expand **Combat effects** for player HP, Soulreaper stacks, Mark of Darkness, Kandarin
    diary and Wilderness state. Live HP and actual prayer unlocks are read on the
    client thread when using your character's levels.
-6. Press **Find best gear** or **Ctrl+Enter**. Ranked alternatives sit beside the
+6. Press **Compare gear** or **Ctrl+Enter**. Ranked alternatives sit beside the
    selected equipment setup. Use **Equipment**, **Trade plan** and **Assumptions**
    to inspect each result. Changing inputs marks old results as stale and cancels
    obsolete work; **Cancel**, logout and account changes also stop searches.
    **Ctrl+L** focuses the target search.
 
-**Use my levels & unlocks** and **Include owned untradeables** default on. Untradeables must actually
+**My levels & unlocks** and **Owned untradeables** default on. Untradeables must actually
 have been observed on your account. Notes are converted to item IDs; placeholders
 are excluded. A restored bank cache is labelled separately from a bank read this
 session.
@@ -33,7 +33,7 @@ session.
 ## Optional selling
 
 **Allow gear sales** defaults off and is saved as a plugin setting.
-It applies to **Owned gear + cash** and requires a bank read this session.
+It applies to **Owned + cash** and requires a bank read this session.
 
 When enabled, the search compares against a separate no-sale baseline. It only
 shows a sale-funded setup when its DPS exceeds the best no-sale result found.
@@ -65,7 +65,7 @@ an owned-only, all-style search took 22 ms; a 100m ranged Vorkath search took
 while requiring 99.40m cash. These are sample timings, not limits for every bank
 or target.
 
-Results are labelled **best found**, not a mathematically exhaustive optimum.
+Results are labelled **best found · not proven BiS**, not a mathematically exhaustive optimum.
 NPC data coverage is not the same as verified mechanics coverage. Ordinary attacks,
 raid scaling, special damage rules and supported equipment effects are detailed in
 [encounter coverage](docs/encounter-coverage.md) and [combat maths](docs/combat-math.md).
@@ -100,5 +100,5 @@ source attribution and data licensing are documented in the coverage notes.
 ./gradlew jar
 ```
 
-Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.3.0.jar`.
+Java 11; RuneLite's current release API. Output: `build/libs/best-dps-0.4.0.jar`.
 Building does not publish a Plugin Hub update or prove in-game behaviour.

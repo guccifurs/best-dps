@@ -9,7 +9,7 @@ The bundled numerical dataset is pinned to OSRS Wiki DPS calculator revision [`8
 | Dataset | Bundled coverage |
 | --- | --- |
 | NPC records | 2,860 stat variants across 2,817 IDs; previously 2,829 variants across 2,793 IDs |
-| Searchable encounter choices | 2,871 after explicit Tormented Demon, Hueycoatl and Yama state choices |
+| Searchable encounter choices | 2,875 after explicit Tormented Demon, Hueycoatl, Yama and Vorkath state choices |
 | Equipment | 5,436 variants |
 | Spells | 61 source rows; non-damage spells are not offered as damage attacks |
 | Gear metadata fixes | 168 researched overrides; sources attached to each override |
@@ -39,6 +39,8 @@ Sources: [ToA strategies](https://oldschool.runescape.wiki/w/Tombs_of_Amascut/St
 
 | Target | Rule and source |
 | --- | --- |
+| Vorkath | Existing quest/post-quest choices mean the normal attack phase. Explicit Acid attack halves individual damage; Frozen invulnerable cannot be ranked. Salve (ei) stacks with dragonbane and Void, not Slayer headgear. Antifire, venom, acid movement and whole-kill bolt switches are not simulated. [Wiki](https://oldschool.runescape.wiki/w/Vorkath/Strategies), [Salve](https://oldschool.runescape.wiki/w/Salve_amulet(ei)) |
+| Zombified Spawn | Crumble Undead kills the selected spawn outright when magic attack bonus is greater than -64; otherwise it splashes. This is a single kill action, not sustained training DPS. [Wiki](https://oldschool.runescape.wiki/w/Vorkath/Strategies) |
 | Zulrah | Halberds can reach it; ordinary melee cannot. Each hit above 50 is rerolled uniformly from 45 to 50. Separate colour variants keep distinct defences. [Wiki](https://oldschool.runescape.wiki/w/Zulrah) |
 | Corporeal Beast | Non-magic, non-Corpbane attacks lose half damage. Eligible two-handed spears/halberds and Sunspear need stab. Ruby proc handling belongs to the combat calculator. [Wiki](https://oldschool.runescape.wiki/w/Corporeal_Beast), [Sunspear](https://oldschool.runescape.wiki/w/Sunspear) |
 | Great Olm | Non-matching damage is divided by three: head ranged, left claw melee, right claw magic. Head comparison assumes the final phase. [Wiki](https://oldschool.runescape.wiki/w/Chambers_of_Xeric/Strategies) |
@@ -77,3 +79,13 @@ The Dagannoth Kings use their supplied defensive stats; their combat-style weakn
 Other phase bosses carry visible assumptions: Hydra is already vent-weakened; Duke/Bloat/Hespori/Nightmare/Muspah/Sol/Leviathan/Araxxor comparisons use the selected attackable state and do not estimate mechanic uptime. Doom of Mokhaiotl uses the selected normal form and delve stats; demonbane shield phases are not represented by its base variant.
 
 No claim is made that this dataset enumerates every NPC released after the pinned revision, that every existing NPC mechanic is covered, or that one equipment set is globally best across every fight. The live client has not been used to verify every variant. Unsupported models should be added with an explicit state, primary source and correct hit distribution before removing their boundary.
+
+## Concrete ranking limits and spell fix
+
+A fast search is not a global optimum proof: it shortlists gear (12 top ordinary items per slot and 48 weapons, plus retained alternatives), starts from several seeds, improves individual slots and budget exchanges, and stops at 24,000 loadout evaluations per style. Every NPC has not been verified against an exhaustive enumeration or a live fight.
+
+A confirmed counterexample was fixed: at 41 current Magic (for example after a drain on a character who has completed Family Crest), Wind Bolt reaches base 12 and Chaos gauntlets add 3, while the newly unlocked Wind Blast has base 13. The old spell-family shortlist dropped Wind Bolt as soon as Wind Blast became available, and the gauntlets' zero raw magic stats also removed them from the gear pool. The shortlist now preserves these bolt alternatives below 59 Magic and retains the gauntlets when applicable. At 59 Magic all blast elements reach base 16, exceeding a bolt's 12 + 3. Sources: [Wind Bolt](https://oldschool.runescape.wiki/w/Wind_Bolt), [Wind Blast](https://oldschool.runescape.wiki/w/Wind_Blast), [Chaos gauntlets](https://oldschool.runescape.wiki/w/Chaos_gauntlets).
+
+A Vorkath search with no owned bank items and untradeables disabled excludes Salve amulets and Ava's equipment by design. Its tradeable necklace and cape recommendations should not be compared with unrestricted BiS lists. An owned Salve (ei), with untradeables enabled, is included in the search. The calculator applies its 20% accuracy/damage bonus against Vorkath and keeps it mutually exclusive with Slayer headgear. This supports that specific rule, not a claim that every boss recommendation is verified best-in-slot.
+
+The existing calculator was invoked directly for a bounded comparison (no test suite): 41 current Magic, no prayer, only Chaos gauntlets, post-quest Vorkath gave Wind Bolt max 15 / DPS 0.083442 versus Wind Blast max 13 / DPS 0.072507, at identical 0.033101 accuracy. This isolates the spell-tier error; it is not a recommendation to mage Vorkath. A second controlled comparison at unboosted 99 Ranged, no prayer, dragon hunter crossbow, diamond dragon bolts (e), Masori head/body/legs and no other gear gave Necklace of fangs 5.185336 DPS versus Salve (ei) 6.196477 DPS. This confirms Salve's calculation in that loadout, without proving the whole search globally optimal.

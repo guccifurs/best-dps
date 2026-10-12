@@ -15,7 +15,7 @@ final class BestDpsWindow extends JFrame
 {
 	BestDpsWindow(BestDpsPlugin plugin, BestDpsPanel panel, Window owner)
 	{
-		super("Best DPS · Equipment workbench");
+		super("Best DPS");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		GraphicsConfiguration screen = owner == null ? getGraphicsConfiguration() : owner.getGraphicsConfiguration();
 		Rectangle usable = new Rectangle(screen.getBounds());

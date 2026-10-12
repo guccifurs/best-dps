@@ -603,6 +603,12 @@ public final class BestDpsOptimizer
 		{
 			score += 3_000;
 		}
+		if (request.getStyle() == CombatStyle.MAGIC && item.getNormalizedName().equals("chaos gauntlets")
+			&& (request.getLevels().getMagic() < 59 || request.getSpell() != null && request.getSpell().getName().endsWith(" Bolt")))
+		{
+			// Their +3 bolt damage is absent from ordinary offensive stats.
+			score += 1_000;
+		}
 		String target = request.getMonster().normalizedName();
 		if (target.contains("lesarkus") && name.startsWith("ice arrow")
 			|| target.equals("fareed") && name.startsWith("ice gloves")
@@ -640,6 +646,7 @@ public final class BestDpsOptimizer
 	private static List<SpellStats> spellsFor(BestDpsData data, OptimizationRequest request)
 	{
 		Map<String, SpellStats> best = new java.util.LinkedHashMap<>();
+		List<SpellStats> chaosBolts = new ArrayList<>();
 		for (SpellStats spell : data.getSpells())
 		{
 			if (request.getMonster().normalizedName().equals("salarin the twisted") && !spell.getName().endsWith(" Strike"))
@@ -650,7 +657,12 @@ public final class BestDpsOptimizer
 			{
 				continue;
 			}
-			// Elemental tiers and ancient spell families share effects; keep their highest hit.
+			// At 41-58 Magic, +3 from chaos gauntlets can beat the newly unlocked blast tier.
+			if (request.getLevels().getMagic() < 59 && spell.getName().endsWith(" Bolt"))
+			{
+				chaosBolts.add(spell);
+			}
+			// Most tiers share effects; retain the explicit gauntlet alternatives below.
 			String family = spell.getName().split(" ")[0];
 			String key = spell.getSpellbook() + ':' + spell.getElement() + ':' + family;
 			SpellStats current = best.get(key);
@@ -659,7 +671,12 @@ public final class BestDpsOptimizer
 				best.put(key, spell);
 			}
 		}
-		return new ArrayList<>(best.values());
+		List<SpellStats> selected = new ArrayList<>(best.values());
+		for (SpellStats bolt : chaosBolts)
+		{
+			if (!selected.contains(bolt)) { selected.add(bolt); }
+		}
+		return selected;
 	}
 
 	private final class Evaluator

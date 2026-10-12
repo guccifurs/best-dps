@@ -164,6 +164,11 @@ public final class BestDpsDataService
 			else
 			{
 				phases.add(monster);
+				if (monster.normalizedName().equals("vorkath"))
+				{
+					phases.add(monster.withVersion(monster.getVersion() + ", Acid attack"));
+					phases.add(monster.withVersion(monster.getVersion() + ", Frozen invulnerable"));
+				}
 				if (monster.normalizedName().equals("the hueycoatl")
 					&& (monster.normalizedVersion().equals("normal") || monster.normalizedVersion().equals("tail")))
 				{

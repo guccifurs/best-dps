@@ -274,6 +274,14 @@ public final class DpsCalculator
 			maxHit = EncounterRules.salarinFixedHit(effectiveRequest, loadout);
 			expected = accuracy * maxHit;
 		}
+		if (request.getMonster().normalizedName().equals("zombified spawn") && effectiveRequest.getSpell() != null
+			&& effectiveRequest.getSpell().getName().equals("Crumble Undead"))
+		{
+			// This spell kills the spawn outright; normal damage bonuses and rolls do not apply.
+			maxHit = request.getMonster().getHitpoints();
+			accuracy = magicAttackBonus > -64 ? 1 : 0;
+			expected = accuracy * maxHit;
+		}
 		int speed = isPoweredStaff(loadout) ? attackSpeed(loadout, CombatStyle.MAGIC)
 			: wearing(loadout, "harmonised nightmare staff") && isStandardSpell(effectiveRequest) ? 4 : 5;
 		speed = EncounterRules.attackSpeed(request.getMonster(), loadout, "magic", effectiveRequest.getSpell(), speed);

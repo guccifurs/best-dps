@@ -14,14 +14,12 @@ import com.bestdps.calc.RequirementProfile;
 import com.bestdps.data.BestDpsData;
 import com.bestdps.data.MonsterStats;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.Date;
@@ -29,8 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -62,15 +58,17 @@ final class BestDpsPanel extends JPanel
 	private final JComboBox<BoostProfile> boostBox = new JComboBox<>(BoostProfile.values());
 	private final JComboBox<PrayerProfile> prayerBox = new JComboBox<>(PrayerProfile.values());
 	private final JTextField budgetField = new JTextField("10m");
-	private final JCheckBox untradeablesBox = new JCheckBox("Include owned untradeables");
-	private final JCheckBox useMyLevelsBox = new JCheckBox("Use my levels & unlocks");
+	private final JCheckBox untradeablesBox = new JCheckBox("Owned untradeables");
+	private final JCheckBox useMyLevelsBox = new JCheckBox("My levels & unlocks");
 	private final JComboBox<CandidateMode> sourceBox = new JComboBox<>(new CandidateMode[]{
 		CandidateMode.OWNED_OR_BUDGET, CandidateMode.OWNED_ONLY, CandidateMode.BUDGET});
 	private final JCheckBox sellBox = new JCheckBox("Allow gear sales");
 	private final JCheckBox slayerBox = new JCheckBox("On a Slayer task");
 	private final BestDpsEncounterControls encounterControls = new BestDpsEncounterControls();
 	private final BestDpsResultsPanel results;
-	private final JButton findButton = BestDpsTheme.button("Find best gear", true);
+	private final JButton findButton = BestDpsTheme.button("Compare gear", true);
+	private final JButton encounterButton = BestDpsTheme.button("Encounter & effects", false);
+	private JPanel advancedPanel;
 	private final JButton cancelButton = BestDpsTheme.button("Cancel", false);
 	private final JButton refreshButton = BestDpsTheme.button("Refresh prices", false);
 	private final JLabel statusLabel = BestDpsTheme.muted("Loading combat data…");
@@ -139,7 +137,7 @@ final class BestDpsPanel extends JPanel
 		if (snapshot == null || snapshot == ProfileSnapshot.MAXED)
 		{
 			profileLabel.setText(useMyLevelsBox.isSelected() ? "Log in for your levels" : "Maxed simulation");
-			profileLabel.setToolTipText("Turn on Use my levels & unlocks to use your character.");
+			profileLabel.setToolTipText("Turn on My levels & unlocks to use your character.");
 			return;
 		}
 		PlayerLevels levels = snapshot.getBaseLevels();
@@ -183,27 +181,39 @@ final class BestDpsPanel extends JPanel
 		setSearching(false);
 		hasResults = false;
 		activeRequest = null;
-		results.clear("Ready when you are", message);
+		results.clear("No current results", message);
 		setStatus(message);
 	}
 
 	private void build()
 	{
-		setLayout(new BorderLayout(0, 14));
+		setLayout(new BorderLayout(0, 8));
 		setBackground(BestDpsTheme.BG);
-		setBorder(new EmptyBorder(18, 20, 12, 20));
+		setBorder(new EmptyBorder(8, 10, 8, 10));
 		setPreferredSize(new Dimension(1240, 780));
-		JPanel top = BestDpsTheme.panel(new BorderLayout(0, 16));
+		JPanel top = BestDpsTheme.panel(new BorderLayout(0, 5));
 		top.add(header(), BorderLayout.NORTH);
 		top.add(targetBar(), BorderLayout.CENTER);
+		top.add(controlsBar(), BorderLayout.SOUTH);
 		add(top, BorderLayout.NORTH);
 
-		JPanel workbench = BestDpsTheme.panel(new BorderLayout(16, 0));
-		workbench.add(controlsRail(), BorderLayout.WEST);
-		workbench.add(results, BorderLayout.CENTER);
-		add(workbench, BorderLayout.CENTER);
+		JPanel body = BestDpsTheme.panel(new BorderLayout(8, 0));
+		advancedPanel = new JPanel(new BorderLayout());
+		advancedPanel.setBackground(BestDpsTheme.BG);
+		advancedPanel.setPreferredSize(new Dimension(244, 0));
+		JPanel advancedContent = new ScrollColumn();
+		advancedContent.setLayout(new BorderLayout());
+		advancedContent.add(encounterControls, BorderLayout.NORTH);
+		JScrollPane advancedScroll = new JScrollPane(advancedContent);
+		advancedScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		advancedScroll.getVerticalScrollBar().setUnitIncrement(18);
+		advancedPanel.add(advancedScroll, BorderLayout.CENTER);
+		advancedPanel.setVisible(false);
+		body.add(advancedPanel, BorderLayout.WEST);
+		body.add(results, BorderLayout.CENTER);
+		add(body, BorderLayout.CENTER);
 		add(footer(), BorderLayout.SOUTH);
-		results.clear("Find the gear that earns its slot", "Choose an NPC, set your gear source and compare setups. Your bank stays part of the calculation.");
+		results.clear("Select a target", "Choose an NPC and compare gear. Open your bank to include the items you own.");
 	}
 
 	private JPanel header()
@@ -214,10 +224,9 @@ final class BestDpsPanel extends JPanel
 		title.setFont(BestDpsTheme.TITLE);
 		title.setForeground(BestDpsTheme.ACCENT);
 		brand.add(title);
-		JLabel sub = BestDpsTheme.muted("  /  Equipment workbench");
-		brand.add(sub);
+
 		header.add(brand, BorderLayout.WEST);
-		JPanel account = BestDpsTheme.panel(new FlowLayout(FlowLayout.RIGHT, 14, 5));
+		JPanel account = BestDpsTheme.panel(new FlowLayout(FlowLayout.RIGHT, 14, 2));
 		account.add(profileLabel);
 		account.add(bankLabel);
 		header.add(account, BorderLayout.EAST);
@@ -228,7 +237,7 @@ final class BestDpsPanel extends JPanel
 	{
 		JPanel outer = BestDpsTheme.panel(new BorderLayout(0, 7));
 		outer.setBackground(BestDpsTheme.PANEL);
-		outer.setBorder(new EmptyBorder(12, 14, 10, 14));
+		outer.setBorder(new EmptyBorder(5, 8, 5, 8));
 		JPanel fields = BestDpsTheme.panel(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -244,10 +253,17 @@ final class BestDpsPanel extends JPanel
 		c.weightx = 0.20;
 		c.insets = new Insets(0, 0, 0, 0);
 		fields.add(field("Combat style", styleBox), c);
+		c.gridx++;
+		c.weightx = 0;
+		c.anchor = GridBagConstraints.SOUTH;
+		c.insets = new Insets(0, 10, 0, 0);
+		findButton.setPreferredSize(new Dimension(152, 34));
+		findButton.setToolTipText("Compare gear · Ctrl+Enter");
+		fields.add(findButton, c);
 		monsterSearch.setPreferredSize(new Dimension(240, 34));
 		monsterSearch.setMinimumSize(new Dimension(160, 34));
 		monsterBox.setPreferredSize(new Dimension(340, 34));
-		monsterBox.setMinimumSize(new Dimension(220, 34));
+		monsterBox.setMinimumSize(new Dimension(180, 34));
 		monsterBox.setMaximumRowCount(12);
 		monsterBox.setRenderer(new DefaultListCellRenderer()
 		{
@@ -268,24 +284,20 @@ final class BestDpsPanel extends JPanel
 		styleBox.setMinimumSize(new Dimension(126, 34));
 		outer.add(fields, BorderLayout.CENTER);
 		targetNote.setFont(BestDpsTheme.SMALL);
+		targetNote.setVisible(false);
 		outer.add(targetNote, BorderLayout.SOUTH);
 		return outer;
 	}
 
-	private JPanel controlsRail()
+	private JPanel controlsBar()
 	{
-		JPanel rail = BestDpsTheme.panel(new BorderLayout(0, 12));
-		rail.setPreferredSize(new Dimension(238, 500));
-		rail.setMinimumSize(new Dimension(218, 0));
-		JPanel content = new ScrollColumn();
-		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-		JPanel gear = formSection("Build from");
-		sourceBox.setMinimumSize(new Dimension(0, 32));
-		sourceBox.setPreferredSize(new Dimension(208, 32));
-		for (JComboBox<?> box : new JComboBox<?>[]{boostBox, prayerBox})
+		JPanel controls = BestDpsTheme.panel(new GridBagLayout());
+		controls.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createMatteBorder(1, 0, 1, 0, BestDpsTheme.LINE), new EmptyBorder(5, 8, 5, 8)));
+		for (JComboBox<?> box : new JComboBox<?>[]{sourceBox, boostBox, prayerBox})
 		{
-			box.setMinimumSize(new Dimension(0, 32));
-			box.setPreferredSize(new Dimension(154, 32));
+			box.setMinimumSize(new Dimension(0, 31));
+			box.setPreferredSize(new Dimension(154, 31));
 		}
 		boostBox.setRenderer(new DefaultListCellRenderer()
 		{
@@ -304,50 +316,39 @@ final class BestDpsPanel extends JPanel
 			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean selected, boolean focus)
 			{
 				super.getListCellRendererComponent(list, value, index, selected, focus);
-				setText(value == CandidateMode.OWNED_OR_BUDGET ? "Owned gear + cash"
-					: value == CandidateMode.OWNED_ONLY ? "Owned gear only" : "Buy a setup");
-				setFont(BestDpsTheme.BODY);
-				setBorder(new EmptyBorder(5, 7, 5, 7));
-				setBackground(selected ? BestDpsTheme.RAISED : BestDpsTheme.PANEL);
-				setForeground(BestDpsTheme.TEXT);
+				setText(value == CandidateMode.OWNED_OR_BUDGET ? "Owned + cash"
+					: value == CandidateMode.OWNED_ONLY ? "Owned only" : "Buy a setup");
 				return this;
 			}
 		});
-		stack(gear, sourceBox, 8);
-		stack(gear, field("Cash to spend", budgetField), 7);
-		budgetField.setFont(BestDpsTheme.DATA);
-		budgetField.setToolTipText("Available cash, excluding sale proceeds. Use k, m or b; maximum 2,147,483,647 GP.");
-		stack(gear, sellBox, 0);
+		budgetField.setToolTipText("Available cash, excluding sales. Use k, m or b; maximum 2,147,483,647 GP.");
 		sellBox.setToolTipText("Suggest sales only when they improve DPS. Selected gear is kept; no trades are placed.");
-		stack(content, gear, 10);
-		JPanel character = formSection("Character & boosts");
-		stack(character, useMyLevelsBox, 3);
-		stack(character, untradeablesBox, 3);
-		stack(character, slayerBox, 9);
-		stack(character, inlineField("Boost", boostBox), 8);
-		stack(character, inlineField("Prayer", prayerBox), 0);
-		stack(content, character, 10);
-		stack(content, encounterControls, 0);
-		content.add(Box.createVerticalGlue());
-		JScrollPane scroll = new JScrollPane(content);
-		scroll.setBorder(null);
-		scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scroll.getViewport().setBackground(BestDpsTheme.BG);
-		scroll.getVerticalScrollBar().setUnitIncrement(18);
-		scroll.setMinimumSize(new Dimension(0, 0));
-		rail.add(scroll, BorderLayout.CENTER);
-		JPanel actions = BestDpsTheme.panel(new BorderLayout(0, 7));
-		findButton.setPreferredSize(new Dimension(218, 40));
-		findButton.setToolTipText("Compare setups · Ctrl+Enter");
+		untradeablesBox.setToolTipText("Use untradeable items actually observed on your account. Unowned quest rewards are excluded.");
+		useMyLevelsBox.setToolTipText("Use your character's levels and unlocks. Off uses a maxed simulation.");
 		cancelButton.setVisible(false);
-		actions.add(findButton, BorderLayout.NORTH);
-		actions.add(cancelButton, BorderLayout.CENTER);
-		JLabel shortcut = BestDpsTheme.muted("Ctrl+Enter to compare");
-		shortcut.setHorizontalAlignment(SwingConstants.CENTER);
-		shortcut.setFont(BestDpsTheme.SMALL);
-		actions.add(shortcut, BorderLayout.SOUTH);
-		rail.add(actions, BorderLayout.SOUTH);
-		return rail;
+		JComponent[][] rows = {
+			{inlineField("Gear", sourceBox), inlineField("Cash", budgetField), useMyLevelsBox, untradeablesBox, sellBox},
+			{inlineField("Boost", boostBox), inlineField("Prayer", prayerBox), slayerBox, encounterButton, cancelButton}
+		};
+		double[] weights = {0.26, 0.23, 0.19, 0.19, 0.13};
+		for (int row = 0; row < rows.length; row++)
+		{
+			for (int column = 0; column < rows[row].length; column++)
+			{
+				JComponent input = rows[row][column];
+				BestDpsTheme.style(input);
+				input.setMinimumSize(new Dimension(0, 31));
+				GridBagConstraints c = new GridBagConstraints();
+				c.gridx = column;
+				c.gridy = row;
+				c.weightx = weights[column];
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.insets = new Insets(row == 0 ? 0 : 4, column == 0 ? 0 : 10, 0, 0);
+				controls.add(input, c);
+			}
+		}
+		budgetField.setFont(BestDpsTheme.DATA);
+		return controls;
 	}
 
 	private JPanel footer()
@@ -377,6 +378,12 @@ final class BestDpsPanel extends JPanel
 
 	private void wireControls()
 	{
+		encounterButton.addActionListener(e -> {
+			boolean open = !advancedPanel.isVisible();
+			advancedPanel.setVisible(open);
+			encounterButton.setText(open ? "Hide settings" : "Encounter & effects");
+			revalidate();
+		});
 		monsterSearch.getDocument().addDocumentListener(onEdit(this::scheduleSearch));
 		monsterSearch.addActionListener(e -> { updateSearchResults(); monsterBox.requestFocusInWindow(); });
 		monsterBox.addActionListener(e -> { updateTarget(); settingsChanged(); });
@@ -423,12 +430,14 @@ final class BestDpsPanel extends JPanel
 		encounterControls.setTarget(entry == null ? null : entry.monster, style);
 		if (entry == null)
 		{
+			targetNote.setVisible(false);
 			targetNote.setText("Choose the exact variant or phase you want to fight.");
 			targetNote.setForeground(BestDpsTheme.MUTED);
 		}
 		else
 		{
 			String blocked = EncounterRules.blockingReason(entry.monster, style);
+			targetNote.setVisible(!blocked.isEmpty());
 			targetNote.setText(blocked.isEmpty() ? "NPC " + entry.monster.getId() + " · Selected phase · Continuous attacks" : blocked);
 			targetNote.setToolTipText(blocked.isEmpty() ? entry.monster.label() : blocked);
 			targetNote.setForeground(blocked.isEmpty() ? BestDpsTheme.MUTED : BestDpsTheme.ACCENT);
@@ -483,7 +492,7 @@ final class BestDpsPanel extends JPanel
 		if (runGeneration != generation) { return; }
 		if (useMyLevelsBox.isSelected() && snapshot == ProfileSnapshot.MAXED)
 		{
-			searchFailed(runGeneration, "Log in for your levels, or turn off Use my levels & unlocks."); return;
+			searchFailed(runGeneration, "Log in for your levels, or turn off My levels & unlocks."); return;
 		}
 		RequirementProfile profile = useMyLevelsBox.isSelected() ? snapshot.getRequirements() : RequirementProfile.MAXED;
 		PlayerLevels base = useMyLevelsBox.isSelected() ? snapshot.getBaseLevels() : PlayerLevels.MAXED;
@@ -516,7 +525,7 @@ final class BestDpsPanel extends JPanel
 	private void setSearching(boolean value)
 	{
 		searching = value;
-		findButton.setText(value ? "Comparing…" : "Find best gear");
+		findButton.setText(value ? "Comparing…" : "Compare gear");
 		cancelButton.setVisible(value);
 		progress.setVisible(value);
 		results.setSearching(value);
@@ -584,38 +593,11 @@ final class BestDpsPanel extends JPanel
 	{
 		JPanel panel = BestDpsTheme.panel(new BorderLayout(6, 0));
 		JLabel label = BestDpsTheme.muted(title);
-		label.setPreferredSize(new Dimension(36, 32));
+		label.setPreferredSize(new Dimension(43, 32));
 		label.setLabelFor(component);
 		panel.add(label, BorderLayout.WEST);
 		panel.add(component, BorderLayout.CENTER);
 		return panel;
-	}
-
-	private static JPanel formSection(String heading)
-	{
-		JPanel panel = BestDpsTheme.panel(null);
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		panel.setBackground(BestDpsTheme.PANEL);
-		panel.setBorder(new EmptyBorder(10, 12, 10, 12));
-		JLabel title = BestDpsTheme.label(heading);
-		title.setFont(BestDpsTheme.BODY.deriveFont(java.awt.Font.BOLD));
-		stack(panel, title, 10);
-		return panel;
-	}
-
-	private static void stack(JPanel parent, JComponent child, int gap)
-	{
-		BestDpsTheme.style(child);
-		if (child instanceof JCheckBox)
-		{
-			child.setPreferredSize(new Dimension(child.getPreferredSize().width, 26));
-			child.setMinimumSize(new Dimension(0, 26));
-		}
-		child.setAlignmentX(Component.LEFT_ALIGNMENT);
-		Dimension size = child.getPreferredSize();
-		child.setMaximumSize(new Dimension(Integer.MAX_VALUE, size.height));
-		parent.add(child);
-		if (gap > 0) { parent.add(Box.createVerticalStrut(gap)); }
 	}
 
 	private static DocumentListener onEdit(Runnable action)
