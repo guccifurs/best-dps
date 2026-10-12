@@ -19,10 +19,10 @@ final class QuestUnlocks
 		requireIf(quests, item.contains("ava's attractor") || item.contains("ava's accumulator"), Quest.ANIMAL_MAGNETISM);
 		requireIf(quests, item.contains("ava's assembler"), Quest.DRAGON_SLAYER_II);
 		requireIf(quests, item.contains("dragon scimitar"), Quest.MONKEY_MADNESS_I);
-		requireIf(quests, item.contains("heavy ballista") || item.contains("light ballista"), Quest.MONKEY_MADNESS_II);
+		requireIf(quests, item.contains("heavy ballista"), Quest.MONKEY_MADNESS_II);
 		requireIf(quests, item.contains("dragon halberd"), Quest.REGICIDE);
 		requireIf(quests, item.contains("dragon battleaxe") || item.contains("dragon mace"), Quest.HEROES_QUEST);
-		requireIf(quests, item.contains("rune platebody") || item.contains("d'hide body"), Quest.DRAGON_SLAYER_I);
+		requireIf(quests, item.contains("rune platebody") || item.contains("green d'hide body"), Quest.DRAGON_SLAYER_I);
 		requireIf(quests, item.contains("helm of neitiznot"), Quest.THE_FREMENNIK_ISLES);
 		requireIf(quests, item.contains("neitiznot faceguard"), Quest.THE_FREMENNIK_EXILES);
 		requireIf(quests, item.contains("berserker helm") || item.contains("archer helm") || item.contains("farseer helm") || item.contains("warrior helm"), Quest.THE_FREMENNIK_TRIALS);
@@ -35,7 +35,7 @@ final class QuestUnlocks
 		requireIf(quests, item.contains("keris partisan"), Quest.BENEATH_CURSED_SANDS);
 		requireIf(quests, item.contains("lunar"), Quest.LUNAR_DIPLOMACY);
 		requireIf(quests, item.contains("crystal bow") || item.contains("crystal shield"), Quest.ROVING_ELVES);
-		requireIf(quests, item.contains("bow of faerdhinen") || item.contains("crystal helm") || item.contains("crystal body") || item.contains("crystal legs"), Quest.SONG_OF_THE_ELVES);
+		requireIf(quests, item.contains("crystal helm") || item.contains("crystal body") || item.contains("crystal legs"), Quest.SONG_OF_THE_ELVES);
 		requireIf(quests, item.contains("mythical cape"), Quest.DRAGON_SLAYER_II);
 		requireIf(quests, item.contains("legends' cape"), Quest.LEGENDS_QUEST);
 		requireIf(quests, item.contains("salve amulet"), Quest.HAUNTED_MINE);

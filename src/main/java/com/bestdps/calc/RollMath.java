@@ -84,6 +84,33 @@ public final class RollMath
 		return accuracy * ((minimum + maxHit) / 2.0);
 	}
 
+	/** Expected damage after flat armour, applied to each successful splat, not its maximum.
+	 * See https://oldschool.runescape.wiki/w/Flat_armour.
+	 */
+	public static double expectedHitAfterArmour(double accuracy, int minHit, int maxHit, int armour)
+	{
+		return expectedHitAfterArmour(accuracy, minHit, maxHit, armour, 1);
+	}
+
+	public static double expectedHitAfterArmour(double accuracy, int minHit, int maxHit, int armour, int minimumSuccessfulHit)
+	{
+		if (maxHit <= 0 || accuracy <= 0.0) return 0.0;
+		int low = Math.max(0, Math.min(minHit, maxHit));
+		int minimum = Math.max(1, minimumSuccessfulHit);
+		double plateau = Math.max(0, Math.min(maxHit, minimum - 1) - low + 1);
+		int start = Math.max(Math.max(low, minimum), armour + 1);
+		double count = Math.max(0, maxHit - start + 1);
+		double sum = plateau * Math.max(0, minimum - armour)
+			+ count * ((start + (double) maxHit) / 2.0 - armour);
+		return accuracy * sum / (maxHit - low + 1.0);
+	}
+
+	public static double fangAccuracyInTombs(long attackRoll, long defenceRoll)
+	{
+		double normal = normalAccuracy(attackRoll, defenceRoll);
+		return 1.0 - (1.0 - normal) * (1.0 - normal);
+	}
+
 	public static double fangAccuracy(long attackRoll, long defenceRoll)
 	{
 		double atk = attackRoll;

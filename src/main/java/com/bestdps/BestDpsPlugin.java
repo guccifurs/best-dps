@@ -1,7 +1,14 @@
 package com.bestdps;
 
 import com.bestdps.calc.OwnedItems;
+import com.bestdps.calc.BestDpsOptimizer;
+import com.bestdps.data.MarketPrices;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.bestdps.calc.PlayerLevels;
+import com.bestdps.calc.PrayerBonuses;
+import net.runelite.api.gameval.VarbitID;
 import com.bestdps.calc.ProfileSnapshot;
 import com.bestdps.calc.RequirementProfile;
 import com.bestdps.data.BestDpsData;
@@ -20,9 +27,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.CancellationException;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.ItemComposition;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
@@ -64,12 +79,28 @@ public class BestDpsPlugin extends Plugin
 	@Inject
 	private BestDpsConfig config;
 
-	private BestDpsPanel panel;
+	@Inject
+	private ConfigManager configManager;
+
+	@Inject
+	private Gson gson;
+
+	private volatile BestDpsPanel panel;
 	private BestDpsLauncherPanel launcherPanel;
 	private BestDpsWindow window;
 	private NavigationButton navButton;
-	private ExecutorService executor;
+	private volatile ExecutorService executor;
 	private volatile BestDpsData data;
+	private volatile BestDpsData baseData;
+	private volatile Future<?> searchTask;
+	private final MarketPrices marketPrices = new MarketPrices();
+	private final BestDpsOptimizer optimizer = new BestDpsOptimizer();
+	private volatile boolean running;
+	private volatile long lifecycle;
+	private boolean bankFresh;
+	private boolean bankDirty;
+	private long bankUpdatedAt;
+	private String bankProfile;
 
 	private final Map<Integer, Integer> equipmentItems = new HashMap<>();
 	private final Map<Integer, Integer> inventoryItems = new HashMap<>();
@@ -87,7 +118,9 @@ public class BestDpsPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-		executor = Executors.newSingleThreadExecutor(runnable -> {
+		running = true;
+		long runId = ++lifecycle;
+		executor = Executors.newFixedThreadPool(2, runnable -> {
 			Thread thread = new Thread(runnable, "best-dps-worker");
 			thread.setDaemon(true);
 			return thread;
@@ -102,6 +135,7 @@ public class BestDpsPlugin extends Plugin
 			.priority(6)
 			.build();
 		clientToolbar.addNavigation(navButton);
+		clientThread.invokeLater(this::restoreBankCache);
 		refreshContainers();
 		if (config.readProfileOnStartup())
 		{
@@ -112,19 +146,22 @@ public class BestDpsPlugin extends Plugin
 			try
 			{
 				BestDpsData loaded = new BestDpsDataService().load();
+				if (!running || lifecycle != runId) { return; }
+				baseData = loaded;
 				data = loaded;
 				SwingUtilities.invokeLater(() -> {
-					if (panel != null)
+					if (panel != null && lifecycle == runId)
 					{
 						panel.setData(loaded);
 					}
 				});
+				refreshPrices();
 			}
 			catch (RuntimeException ex)
 			{
 				log.warn("Could not load Best DPS data", ex);
 				SwingUtilities.invokeLater(() -> {
-					if (panel != null)
+					if (panel != null && lifecycle == runId)
 					{
 						panel.setStatus("Data failed to load.");
 					}
@@ -136,6 +173,9 @@ public class BestDpsPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		running = false;
+		lifecycle++;
+		cancelSearch();
 		if (navButton != null)
 		{
 			clientToolbar.removeNavigation(navButton);
@@ -154,12 +194,15 @@ public class BestDpsPlugin extends Plugin
 		launcherPanel = null;
 		panel = null;
 		data = null;
+		baseData = null;
 		synchronized (itemLock)
 		{
 			equipmentItems.clear();
 			inventoryItems.clear();
 			bankItems.clear();
 			bankScanned = false;
+			bankFresh = false;
+			bankProfile = null;
 		}
 		profileSnapshot = ProfileSnapshot.MAXED;
 	}
@@ -167,7 +210,11 @@ public class BestDpsPlugin extends Plugin
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
+		if (!running || client.getGameState() != GameState.LOGGED_IN) { return; }
+		if (!Objects.equals(bankProfile, configManager.getRSProfileKey())) { restoreBankCache(); }
 		int containerId = event.getContainerId();
+		if (containerId != InventoryID.EQUIPMENT.getId() && containerId != InventoryID.INVENTORY.getId()
+			&& containerId != InventoryID.BANK.getId()) { return; }
 		synchronized (itemLock)
 		{
 			if (containerId == InventoryID.EQUIPMENT.getId())
@@ -178,10 +225,13 @@ public class BestDpsPlugin extends Plugin
 			{
 				copyItems(event.getItemContainer(), inventoryItems);
 			}
-			else if (containerId == InventoryID.BANK.getId())
+			else if (containerId == InventoryID.BANK.getId() && event.getItemContainer() != null)
 			{
 				copyItems(event.getItemContainer(), bankItems);
 				bankScanned = true;
+				bankFresh = true;
+				bankDirty = true;
+				bankUpdatedAt = System.currentTimeMillis();
 			}
 		}
 		updateBankStatus();
@@ -213,20 +263,152 @@ public class BestDpsPlugin extends Plugin
 	void optimize(com.bestdps.calc.OptimizationRequest request, int generation)
 	{
 		BestDpsData snapshot = data;
-		if (snapshot == null || executor == null)
-		{
-			panel.setStatus("Data is still loading.");
-			return;
-		}
-		executor.submit(() -> {
-			java.util.List<com.bestdps.calc.DpsResult> results = new com.bestdps.calc.BestDpsOptimizer().optimize(snapshot, request);
-			SwingUtilities.invokeLater(() -> {
-				if (panel != null)
-				{
-					panel.showResults(generation, results);
-				}
-			});
+		BestDpsPanel target = panel;
+		if (snapshot == null || executor == null || target == null) { return; }
+		cancelSearch();
+		searchTask = executor.submit(() -> {
+			long started = System.nanoTime();
+			try
+			{
+				java.util.List<com.bestdps.calc.DpsResult> results = optimizer.optimize(snapshot, request);
+				long elapsed = (System.nanoTime() - started) / 1_000_000;
+				if (Thread.currentThread().isInterrupted()) { return; }
+				log.debug("Best DPS search target={} style={} source={} results={} duration={}ms",
+					request.getMonster().getId(), request.getStyle(), request.getCandidateMode(), results.size(), elapsed);
+				SwingUtilities.invokeLater(() -> {
+					if (panel == target) { target.showResults(generation, results, elapsed); }
+				});
+			}
+			catch (CancellationException ex) { /* Replaced by a newer request. */ }
+			catch (RuntimeException ex)
+			{
+				log.warn("Best DPS search failed after {} ms", (System.nanoTime() - started) / 1_000_000, ex);
+				SwingUtilities.invokeLater(() -> {
+					if (panel == target) { target.searchFailed(generation, "Search failed; see client log."); }
+				});
+			}
 		});
+	}
+
+	void cancelSearch()
+	{
+		if (searchTask != null) { searchTask.cancel(true); searchTask = null; }
+	}
+
+	void refreshPrices()
+	{
+		BestDpsData original = baseData;
+		if (original == null || !running) { return; }
+		try
+		{
+			BestDpsData quoted = marketPrices.refresh(original);
+			if (!running || baseData != original) { return; }
+			data = quoted;
+			SwingUtilities.invokeLater(() -> {
+				if (panel != null) { panel.pricesUpdated(quoted, "Wiki quotes: 2% buffer; old/missing quotes estimated"); }
+			});
+		}
+		catch (java.io.IOException | RuntimeException ex)
+		{
+			log.debug("Best DPS price refresh unavailable", ex);
+			SwingUtilities.invokeLater(() -> {
+				if (panel != null) { panel.pricesUpdated(data, "Bundled price estimates; resale needs fresh quotes"); }
+			});
+		}
+	}
+
+	void saveSellPreference(boolean enabled)
+	{
+		configManager.setConfiguration("bestdps", "sellOwnedItems", enabled);
+	}
+
+	void requestPriceRefresh()
+	{
+		if (executor != null) { executor.submit(this::refreshPrices); }
+	}
+
+	boolean isBankFresh() { synchronized (itemLock) { return bankFresh; } }
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		if (!bankDirty || !running || configManager.getRSProfileKey() == null) { return; }
+		synchronized (itemLock)
+		{
+			if (!Objects.equals(bankProfile, configManager.getRSProfileKey())) { return; }
+			JsonObject saved = new JsonObject();
+			saved.addProperty("updatedAt", bankUpdatedAt);
+			saved.add("items", gson.toJsonTree(bankItems));
+			configManager.setRSProfileConfiguration("bestdps", "bankCacheV1", saved.toString());
+			bankDirty = false;
+		}
+	}
+
+	@Subscribe
+	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
+	{
+		if (!running) { return; }
+		cancelSearch();
+		restoreBankCache();
+		refreshContainers();
+		SwingUtilities.invokeLater(() -> { if (panel != null) { panel.invalidateResults("Account changed; search again."); } });
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (!running) { return; }
+		if (event.getGameState() == GameState.LOGIN_SCREEN)
+		{
+			cancelSearch();
+			synchronized (itemLock)
+			{
+				equipmentItems.clear(); inventoryItems.clear(); bankItems.clear();
+				bankScanned = false; bankFresh = false; bankDirty = false; bankProfile = null;
+			}
+			profileSnapshot = ProfileSnapshot.MAXED;
+			updateBankStatus();
+			SwingUtilities.invokeLater(() -> { if (panel != null) { panel.invalidateResults("Log in to use your bank cache."); } });
+		}
+		else if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			if (!Objects.equals(bankProfile, configManager.getRSProfileKey())) { restoreBankCache(); }
+			refreshContainers();
+		}
+	}
+
+	private void restoreBankCache()
+	{
+		if (!running) { return; }
+		synchronized (itemLock)
+		{
+			equipmentItems.clear(); inventoryItems.clear(); bankItems.clear();
+			bankScanned = false; bankFresh = false; bankDirty = false; bankUpdatedAt = 0;
+			bankProfile = configManager.getRSProfileKey();
+			if (bankProfile == null || client.getGameState() != GameState.LOGGED_IN) { return; }
+			String saved = configManager.getRSProfileConfiguration("bestdps", "bankCacheV1");
+			if (saved != null)
+			{
+				try
+				{
+					JsonObject object = new JsonParser().parse(saved).getAsJsonObject();
+					for (Map.Entry<String, com.google.gson.JsonElement> entry : object.getAsJsonObject("items").entrySet())
+					{
+						int id = Integer.parseInt(entry.getKey());
+						int quantity = entry.getValue().getAsInt();
+						if (id > 0 && quantity > 0) { bankItems.put(id, quantity); }
+					}
+					bankUpdatedAt = object.get("updatedAt").getAsLong();
+					bankScanned = true;
+				}
+				catch (RuntimeException ex)
+				{
+					bankItems.clear();
+					log.debug("Best DPS saved bank cache could not be read");
+				}
+			}
+		}
+		updateBankStatus();
 	}
 
 	OwnedItems ownedItems()
@@ -259,6 +441,7 @@ public class BestDpsPlugin extends Plugin
 			return;
 		}
 		clientThread.invokeLater(() -> {
+			if (!running) { return; }
 			ProfileSnapshot snapshot = buildProfileSnapshot("Profile refreshed");
 			profileSnapshot = snapshot;
 			SwingUtilities.invokeLater(() -> {
@@ -271,6 +454,7 @@ public class BestDpsPlugin extends Plugin
 	void refreshProfileFromClient(String source)
 	{
 		clientThread.invokeLater(() -> {
+			if (!running) { return; }
 			ProfileSnapshot snapshot = buildProfileSnapshot(source);
 			profileSnapshot = snapshot;
 			SwingUtilities.invokeLater(this::updateProfileStatus);
@@ -279,6 +463,7 @@ public class BestDpsPlugin extends Plugin
 
 	private ProfileSnapshot buildProfileSnapshot(String source)
 	{
+		if (client.getGameState() != GameState.LOGGED_IN) { return ProfileSnapshot.MAXED; }
 		EnumMap<Skill, Integer> levels = new EnumMap<>(Skill.class);
 		EnumMap<Skill, Integer> boosted = new EnumMap<>(Skill.class);
 		for (Skill skill : Skill.values())
@@ -310,7 +495,13 @@ public class BestDpsPlugin extends Plugin
 			PlayerLevels.from(levels),
 			PlayerLevels.from(boosted),
 			prayers,
-			source);
+			source,
+			PrayerBonuses.bestAvailable(PlayerLevels.from(levels),
+				client.getVarbitValue(VarbitID.KR_KNIGHTWAVES_STATE) == 8,
+				client.getVarbitValue(VarbitID.PRAYER_RIGOUR_UNLOCKED) == 1,
+				client.getVarbitValue(VarbitID.PRAYER_AUGURY_UNLOCKED) == 1,
+				client.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) == 1,
+				client.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) == 1));
 	}
 
 	BestDpsData getData()
@@ -334,16 +525,12 @@ public class BestDpsPlugin extends Plugin
 	private void refreshContainers()
 	{
 		clientThread.invokeLater(() -> {
+			if (!running || client.getGameState() != GameState.LOGGED_IN) { return; }
 			synchronized (itemLock)
 			{
 				copyItems(client.getItemContainer(InventoryID.EQUIPMENT), equipmentItems);
 				copyItems(client.getItemContainer(InventoryID.INVENTORY), inventoryItems);
-				ItemContainer bank = client.getItemContainer(InventoryID.BANK);
-				if (bank != null)
-				{
-					copyItems(bank, bankItems);
-					bankScanned = true;
-				}
+				// Bank is replaced only by an observed bank container event for this account.
 			}
 			updateBankStatus();
 		});
@@ -352,16 +539,20 @@ public class BestDpsPlugin extends Plugin
 	private void updateBankStatus()
 	{
 		boolean scanned;
+		boolean fresh;
+		long updatedAt;
 		int observedItems;
 		synchronized (itemLock)
 		{
 			scanned = bankScanned;
+			fresh = bankFresh;
+			updatedAt = bankUpdatedAt;
 			observedItems = equipmentItems.size() + inventoryItems.size() + bankItems.size();
 		}
 		SwingUtilities.invokeLater(() -> {
 			if (panel != null)
 			{
-				panel.updateBankStatus(scanned, observedItems);
+				panel.updateBankStatus(scanned, observedItems, fresh, updatedAt);
 			}
 			if (launcherPanel != null)
 			{
@@ -378,7 +569,7 @@ public class BestDpsPlugin extends Plugin
 		}
 	}
 
-	private static void copyItems(ItemContainer container, Map<Integer, Integer> target)
+	private void copyItems(ItemContainer container, Map<Integer, Integer> target)
 	{
 		target.clear();
 		if (container == null)
@@ -391,7 +582,10 @@ public class BestDpsPlugin extends Plugin
 			{
 				continue;
 			}
-			target.merge(item.getId(), item.getQuantity(), Integer::sum);
+			ItemComposition definition = client.getItemDefinition(item.getId());
+			if (definition.getPlaceholderTemplateId() != -1) { continue; }
+			int id = definition.getNote() != -1 ? definition.getLinkedNoteId() : item.getId();
+			target.merge(id, item.getQuantity(), (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
 		}
 	}
 
@@ -399,7 +593,7 @@ public class BestDpsPlugin extends Plugin
 	{
 		for (Map.Entry<Integer, Integer> entry : source.entrySet())
 		{
-			target.merge(entry.getKey(), entry.getValue(), Integer::sum);
+			target.merge(entry.getKey(), entry.getValue(), (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
 		}
 	}
 

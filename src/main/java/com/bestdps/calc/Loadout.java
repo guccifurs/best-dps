@@ -19,22 +19,40 @@ public final class Loadout
 		this.gear = new EnumMap<>(GearSlot.class);
 		this.gear.putAll(gear);
 
-		StatBlock offensiveTotal = StatBlock.ZERO;
-		StatBlock bonusTotal = StatBlock.ZERO;
-		int totalCost = 0;
+		int[] offensiveTotal = new int[9];
+		int[] bonusTotal = new int[9];
+		long totalCost = 0;
 		for (GearItem item : this.gear.values())
 		{
 			if (item == null)
 			{
 				continue;
 			}
-			offensiveTotal = offensiveTotal.plus(item.getOffensive());
-			bonusTotal = bonusTotal.plus(item.getBonuses());
+			add(offensiveTotal, item.getOffensive());
+			add(bonusTotal, item.getBonuses());
 			totalCost += item.getPriceOrZero();
 		}
-		this.offensive = offensiveTotal;
-		this.bonuses = bonusTotal;
-		this.cost = totalCost;
+		this.offensive = stats(offensiveTotal);
+		this.bonuses = stats(bonusTotal);
+		this.cost = (int) Math.min(Integer.MAX_VALUE, totalCost);
+	}
+
+	private static void add(int[] total, StatBlock item)
+	{
+		total[0] += item.getStab();
+		total[1] += item.getSlash();
+		total[2] += item.getCrush();
+		total[3] += item.getMagic();
+		total[4] += item.getRanged();
+		total[5] += item.getStrength();
+		total[6] += item.getRangedStrength();
+		total[7] += item.getMagicDamage();
+		total[8] += item.getPrayer();
+	}
+
+	private static StatBlock stats(int[] total)
+	{
+		return new StatBlock(total[0], total[1], total[2], total[3], total[4], total[5], total[6], total[7], total[8]);
 	}
 
 	public GearItem get(GearSlot slot)

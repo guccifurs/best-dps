@@ -1,0 +1,1420 @@
+{
+  "30750": {
+    "name": "Oathplate helm",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_helm"
+  },
+  "30753": {
+    "name": "Oathplate chest",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_chest"
+  },
+  "30756": {
+    "name": "Oathplate legs",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_legs"
+  },
+  "30777": {
+    "name": "Radiant oathplate helm",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_oathplate_helm"
+  },
+  "30779": {
+    "name": "Radiant oathplate chest",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_oathplate_chest"
+  },
+  "30781": {
+    "name": "Radiant oathplate legs",
+    "skills": {
+      "defence": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_oathplate_legs"
+  },
+  "31106": {
+    "name": "Confliction gauntlets",
+    "skills": {
+      "hitpoints": 90
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Confliction_gauntlets"
+  },
+  "34407": {
+    "name": "Amulet of air",
+    "skills": {
+      "magic": 59
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Amulet_of_air"
+  },
+  "34413": {
+    "name": "Amulet of water",
+    "skills": {
+      "magic": 59
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Amulet_of_water"
+  },
+  "34419": {
+    "name": "Amulet of earth",
+    "skills": {
+      "magic": 59
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Amulet_of_earth"
+  },
+  "34425": {
+    "name": "Amulet of fire",
+    "skills": {
+      "magic": 59
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Amulet_of_fire"
+  },
+  "34428": {
+    "name": "Elemental amulet",
+    "skills": {
+      "magic": 59
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Elemental_amulet"
+  },
+  "33639": {
+    "name": "Necklace of rupture",
+    "skills": {
+      "hitpoints": 90
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Necklace_of_rupture"
+  },
+  "34401": {
+    "name": "Necklace of fangs",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Necklace_of_fangs"
+  },
+  "33631": {
+    "name": "Crimson kisten",
+    "skills": {
+      "attack": 60,
+      "strength": 85
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Crimson_kisten"
+  },
+  "34027": {
+    "name": "Hallowfell",
+    "skills": {
+      "attack": 75
+    },
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Hallowfell"
+  },
+  "33718": {
+    "name": "Hallowed flail",
+    "skills": {
+      "attack": 50
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Hallowed_flail"
+  },
+  "33716": {
+    "name": "Blisterwood stake",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Blisterwood_stake"
+  },
+  "33722": {
+    "name": "Sunspear",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Sunspear"
+  },
+  "11783": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25275": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26780": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11774": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25266": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26771": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11782": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25274": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26779": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11781": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25273": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26778": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11780": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25272": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26777": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11779": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25271": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26776": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11778": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25270": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26775": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11777": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25269": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26774": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11776": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25268": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26773": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11775": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25267": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26772": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "11784": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "25276": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "26781": {
+    "name": "Black mask (i)",
+    "skills": {
+      "combat": 40,
+      "strength": 20,
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Black_mask_%28i%29"
+  },
+  "33338": {
+    "name": "Oathplate slayer helmet",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_slayer_helmet"
+  },
+  "33443": {
+    "name": "Oathplate slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_slayer_helmet_%28i%29"
+  },
+  "33439": {
+    "name": "Oathplate slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_slayer_helmet_%28i%29"
+  },
+  "33441": {
+    "name": "Oathplate slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Oathplate_slayer_helmet_%28i%29"
+  },
+  "33340": {
+    "name": "Radiant slayer helmet",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_slayer_helmet"
+  },
+  "33449": {
+    "name": "Radiant slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_slayer_helmet_%28i%29"
+  },
+  "33445": {
+    "name": "Radiant slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_slayer_helmet_%28i%29"
+  },
+  "33447": {
+    "name": "Radiant slayer helmet (i)",
+    "skills": {
+      "defence": 10
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Radiant_slayer_helmet_%28i%29"
+  },
+  "20657": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "25248": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "26762": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "19710": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "25246": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "26761": {
+    "name": "Ring of suffering (i)",
+    "skills": {
+      "hitpoints": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Ring_of_suffering_%28i%29"
+  },
+  "9772": {
+    "name": "Agility cape",
+    "skills": {
+      "agility": 99
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Agility_cape"
+  },
+  "13341": {
+    "name": "Agility cape",
+    "skills": {
+      "agility": 99
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Agility_cape"
+  },
+  "9771": {
+    "name": "Agility cape",
+    "skills": {
+      "agility": 99
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Agility_cape"
+  },
+  "13340": {
+    "name": "Agility cape",
+    "skills": {
+      "agility": 99
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Agility_cape"
+  },
+  "33330": {
+    "name": "Iban's staff (o)",
+    "skills": {
+      "attack": 50,
+      "magic": 50
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Iban%27s_staff_%28o%29"
+  },
+  "33332": {
+    "name": "Iban's staff (u) (o)",
+    "skills": {
+      "attack": 50,
+      "magic": 50
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Iban%27s_staff_%28u%29_%28o%29"
+  },
+  "33326": {
+    "name": "Trident of the Seas (e) (o)",
+    "skills": {
+      "magic": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Seas_%28e%29_%28o%29"
+  },
+  "33328": {
+    "name": "Trident of the Seas (e) (o)",
+    "skills": {
+      "magic": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Seas_%28e%29_%28o%29"
+  },
+  "33323": {
+    "name": "Trident of the Seas (o)",
+    "skills": {
+      "magic": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Seas_%28o%29"
+  },
+  "33322": {
+    "name": "Trident of the Seas (o)",
+    "skills": {
+      "magic": 75
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Seas_%28o%29"
+  },
+  "33318": {
+    "name": "Trident of the Swamp (e) (o)",
+    "skills": {
+      "magic": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Swamp_%28e%29_%28o%29"
+  },
+  "33320": {
+    "name": "Trident of the Swamp (e) (o)",
+    "skills": {
+      "magic": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Swamp_%28e%29_%28o%29"
+  },
+  "33314": {
+    "name": "Trident of the Swamp (o)",
+    "skills": {
+      "magic": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Swamp_%28o%29"
+  },
+  "33316": {
+    "name": "Trident of the Swamp (o)",
+    "skills": {
+      "magic": 78
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Trident_of_the_Swamp_%28o%29"
+  },
+  "740": {
+    "name": "Blue hat (Legends' Quest)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Blue_hat_%28Legends%27_Quest%29"
+  },
+  "32488": {
+    "name": "Crate of glassmaking supplies",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Crate_of_glassmaking_supplies"
+  },
+  "33644": {
+    "name": "Dummy stymphike feather",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Dummy_stymphike_feather",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "30380": {
+    "name": "Gloves of the Damned",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Gloves_of_the_Damned",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "33333": {
+    "name": "Iban's staff (o)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Iban%27s_staff_%28o%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "33851": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33839": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33836": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33854": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33842": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33848": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33845": {
+    "name": "Noble robe top",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Noble_robe_top"
+  },
+  "33800": {
+    "name": "Silvthrill ballista",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Silvthrill_ballista",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "33801": {
+    "name": "Silvthrill javelin",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Silvthrill_javelin",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "33790": {
+    "name": "Spine",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Spine",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "34063": {
+    "name": "Vampyre snelm",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Vampyre_snelm"
+  },
+  "26696": {
+    "name": "Wristbands of the Arena",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26725": {
+    "name": "Wristbands of the Arena",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26726": {
+    "name": "Wristbands of the Arena",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26724": {
+    "name": "Wristbands of the Arena",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26723": {
+    "name": "Wristbands of the Arena",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26697": {
+    "name": "Wristbands of the Arena (i)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena_%28i%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26729": {
+    "name": "Wristbands of the Arena (i)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena_%28i%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26730": {
+    "name": "Wristbands of the Arena (i)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena_%28i%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26728": {
+    "name": "Wristbands of the Arena (i)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena_%28i%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "26727": {
+    "name": "Wristbands of the Arena (i)",
+    "skills": {},
+    "tradeable": false,
+    "isStandardGear": false,
+    "source": "https://oldschool.runescape.wiki/w/Wristbands_of_the_Arena_%28i%29",
+    "reason": "Seasonal, unreleased, quest-instance-only, or broken equipment; outside ordinary bank gear."
+  },
+  "33881": {
+    "name": "Wyrmscraig boots",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_boots"
+  },
+  "33872": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33860": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33857": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33875": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33863": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33869": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33866": {
+    "name": "Wyrmscraig noble skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_noble_skirt"
+  },
+  "33878": {
+    "name": "Wyrmscraig shoes",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_shoes"
+  },
+  "33923": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33911": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33908": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33926": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33914": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33920": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33917": {
+    "name": "Wyrmscraig villager robe bottom (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28A%29"
+  },
+  "33944": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33932": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33929": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33947": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33935": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33941": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33938": {
+    "name": "Wyrmscraig villager robe bottom (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_bottom_%28B%29"
+  },
+  "33905": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33899": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33887": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33884": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33902": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33890": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33896": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33893": {
+    "name": "Wyrmscraig villager robe top (A)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28A%29"
+  },
+  "33965": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33953": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33950": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33968": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33956": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33962": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33959": {
+    "name": "Wyrmscraig villager robe top (B)",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_robe_top_%28B%29"
+  },
+  "33986": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33974": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33971": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33989": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33977": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33983": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "33980": {
+    "name": "Wyrmscraig villager skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_skirt"
+  },
+  "34013": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "34007": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "33995": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "33992": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "34010": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "33998": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "34004": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "34001": {
+    "name": "Wyrmscraig villager work skirt",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Wyrmscraig_villager_work_skirt"
+  },
+  "33577": {
+    "name": "Seeking adamant arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_adamant_arrow"
+  },
+  "33589": {
+    "name": "Seeking amethyst arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_amethyst_arrow"
+  },
+  "33601": {
+    "name": "Seeking broad arrows",
+    "skills": {
+      "slayer": 55,
+      "ranged": 50
+    },
+    "tradeable": false,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_broad_arrows"
+  },
+  "33553": {
+    "name": "Seeking bronze arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_bronze_arrow"
+  },
+  "33595": {
+    "name": "Seeking dragon arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_dragon_arrow"
+  },
+  "33559": {
+    "name": "Seeking iron arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_iron_arrow"
+  },
+  "33571": {
+    "name": "Seeking mithril arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_mithril_arrow"
+  },
+  "33583": {
+    "name": "Seeking rune arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_rune_arrow"
+  },
+  "33565": {
+    "name": "Seeking steel arrow",
+    "skills": {},
+    "tradeable": true,
+    "isStandardGear": true,
+    "source": "https://oldschool.runescape.wiki/w/Seeking_steel_arrow"
+  }
+}

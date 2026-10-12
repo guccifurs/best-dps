@@ -18,7 +18,8 @@ final class RangedAmmo
 		{
 			return true;
 		}
-		return !weaponUsesProjectileAmmo(weapon) && passiveAmmoSlotItem(ammo);
+		// Ice arrows may occupy the real ammo slot with a thrown weapon for Lesarkus.
+		return !weaponUsesProjectileAmmo(weapon) && (ammo.getId() == 78 || passiveAmmoSlotItem(ammo));
 	}
 
 	static boolean strengthApplies(GearItem ammo, GearItem weapon)
@@ -33,7 +34,7 @@ final class RangedAmmo
 			return false;
 		}
 		int weaponId = weapon.getId();
-		return arrowTierForWeapon(weaponId) > 0
+		return isBlowpipe(weapon) || arrowTierForWeapon(weaponId) > 0
 			|| boltTierForWeapon(weaponId) > 0
 			|| weaponId == 8880
 			|| weaponId == 10156
@@ -60,6 +61,13 @@ final class RangedAmmo
 		if (ammo == null || weapon == null)
 		{
 			return false;
+		}
+		if (isBlowpipe(weapon)) return isDart(ammo);
+		if (ammo.getNormalizedName().startsWith("seeking "))
+		{
+			int allowed = arrowTierForWeapon(weapon.getId());
+			int tier = seekingTier(ammo.getNormalizedName());
+			return tier > 0 && tier <= allowed;
 		}
 		int ammoId = ammo.getId();
 		int weaponId = weapon.getId();
@@ -109,6 +117,18 @@ final class RangedAmmo
 				int boltTier = boltTierForWeapon(weaponId);
 				return boltTier > 0 && boltTier(ammoId) > 0 && boltTier(ammoId) <= boltTier;
 		}
+	}
+
+	private static int seekingTier(String name)
+	{
+		if (name.contains("dragon")) return 60;
+		if (name.contains("amethyst") || name.contains("broad")) return 50;
+		if (name.contains("rune")) return 40;
+		if (name.contains("adamant")) return 30;
+		if (name.contains("mithril")) return 20;
+		if (name.contains("steel")) return 5;
+		if (name.contains("iron") || name.contains("bronze")) return 1;
+		return 0;
 	}
 
 	private static int arrowTierForWeapon(int weaponId)
@@ -398,6 +418,18 @@ final class RangedAmmo
 			default:
 				return 0;
 		}
+	}
+
+	static boolean isBlowpipe(GearItem weapon)
+	{
+		return weapon != null && weapon.getNormalizedName().contains("blowpipe");
+	}
+
+	static boolean isDart(GearItem item)
+	{
+		if (item == null) return false;
+		String name = item.getNormalizedName();
+		return name.endsWith(" dart") && !name.startsWith("atlatl") && !name.contains("training");
 	}
 
 	private static boolean passiveAmmoSlotItem(GearItem ammo)

@@ -4,6 +4,7 @@ import com.bestdps.data.BestDpsData;
 import com.bestdps.data.GearItem;
 import com.bestdps.data.GearSlot;
 import com.bestdps.data.SpellStats;
+import com.bestdps.data.StatBlock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -12,220 +13,532 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import net.runelite.api.Quest;
+import net.runelite.api.Skill;
 
 public final class BestDpsOptimizer
 {
-	private static final int SLOT_LIMIT = 10;
-	private static final int WEAPON_LIMIT = 24;
-	private static final int BEAM_WIDTH = 64;
+	// Multi-start coordinate search: bounded work, not an exhaustive optimum claim.
+	private static final int SLOT_LIMIT = 12;
+	private static final int WEAPON_LIMIT = 48;
+	private static final int MAX_EVALUATIONS_PER_STYLE = 24_000;
 	private static final GearSlot[] NON_WEAPON_SLOTS = {
-		GearSlot.HEAD,
-		GearSlot.CAPE,
-		GearSlot.NECK,
-		GearSlot.AMMO,
-		GearSlot.BODY,
-		GearSlot.SHIELD,
-		GearSlot.LEGS,
-		GearSlot.HANDS,
-		GearSlot.FEET,
-		GearSlot.RING
+		GearSlot.AMMO, GearSlot.NECK, GearSlot.BODY, GearSlot.LEGS, GearSlot.HEAD,
+		GearSlot.HANDS, GearSlot.SHIELD, GearSlot.CAPE, GearSlot.FEET, GearSlot.RING
 	};
-
+	private static final Comparator<DpsResult> RESULT_ORDER = Comparator.comparingDouble(DpsResult::getDps)
+		.reversed().thenComparingLong(result -> result.getTradePlan() == null
+			? result.getPurchaseCost() : result.getTradePlan().getCashNeeded());
 	private final DpsCalculator calculator = new DpsCalculator();
 
 	public List<DpsResult> optimize(BestDpsData data, OptimizationRequest request)
 	{
-		if (request.getMonster() == null || request.getStyle() == null || request.getLevels() == null)
+		if (data == null || request == null || request.getMonster() == null || request.getStyle() == null || request.getLevels() == null)
 		{
 			return java.util.Collections.emptyList();
 		}
+		checkCancelled();
+		if (!EncounterRules.blockingReason(request.getMonster(), request.getStyle()).isEmpty())
+		{
+			return java.util.Collections.emptyList();
+		}
+		CombatContext combat = request.getCombatContext();
+		if (combat.isMarkOfDarkness() && (request.getLevels().getMagic() < 59
+			|| !request.getRequirementProfile().hasCompletedQuest(Quest.A_KINGDOM_DIVIDED)))
+		{
+			request = request.withCombatContext(new CombatContext(combat.getCurrentHp(), combat.getMaxHp(),
+				combat.getSoulreaperStacks(), false, combat.isKandarinDiary(), combat.isWilderness()));
+		}
+		List<DpsResult> baseline = request.isSellOwnedItems()
+			? optimize(data, request.withSellOwnedItems(false)) : java.util.Collections.emptyList();
+		double baselineDps = baseline.isEmpty() ? 0 : baseline.get(0).getDps();
+		OptimizationRequest scaled = request.withMonster(EncounterRules.scale(request.getMonster(), request.getEncounterContext()));
+		List<DpsResult> results = new ArrayList<>();
 		if (request.getStyle() == CombatStyle.ANY)
 		{
-			return optimizeAny(data, request);
-		}
-
-		List<SpellStats> spells = spellsFor(data, request);
-		List<GearItem> weapons = candidates(data, request, GearSlot.WEAPON, WEAPON_LIMIT);
-		Map<GearSlot, List<GearItem>> slotCandidates = new EnumMap<>(GearSlot.class);
-		for (GearSlot slot : NON_WEAPON_SLOTS)
-		{
-			slotCandidates.put(slot, candidates(data, request, slot, SLOT_LIMIT));
-		}
-
-		List<DpsResult> results = new ArrayList<>();
-		Set<String> seen = new HashSet<>();
-		for (GearItem weapon : weapons)
-		{
-			List<SearchState> states = new ArrayList<>();
-			EnumMap<GearSlot, GearItem> baseGear = new EnumMap<>(GearSlot.class);
-			baseGear.put(GearSlot.WEAPON, weapon);
-			states.add(new SearchState(baseGear, budgetCost(request, weapon)));
-
-			for (GearSlot slot : NON_WEAPON_SLOTS)
+			for (CombatStyle style : CombatStyle.concreteValues())
 			{
-				List<SearchState> next = new ArrayList<>();
-				List<GearItem> candidates = candidatesForSlotWithWeapon(slotCandidates.get(slot), weapon, slot);
-				for (SearchState state : states)
-				{
-					for (GearItem item : candidates)
-					{
-						int cost = state.cost + budgetCost(request, item);
-						if (!withinBudget(request, cost))
-						{
-							continue;
-						}
-						EnumMap<GearSlot, GearItem> gear = new EnumMap<>(state.gear);
-						if (item != null)
-						{
-							gear.put(slot, item);
-						}
-						Loadout loadout = new Loadout(gear);
-						DpsResult score = bestSpellResult(request, loadout, spells);
-						next.add(new SearchState(gear, cost, score.getDps()));
-					}
-				}
-				next.sort(Comparator.comparingDouble(SearchState::getScore).reversed().thenComparingInt(SearchState::getCost));
-				states = next.size() > BEAM_WIDTH ? new ArrayList<>(next.subList(0, BEAM_WIDTH)) : next;
-				if (states.isEmpty())
+				results.addAll(optimizeStyle(data, scaled.withStyle(style)));
+			}
+		}
+		else
+		{
+			results.addAll(optimizeStyle(data, scaled));
+		}
+		if (request.isSellOwnedItems())
+		{
+			results.removeIf(result -> result.getTradePlan() != null && !result.getTradePlan().getSales().isEmpty()
+				&& result.getDps() <= baselineDps);
+			results.addAll(baseline);
+		}
+		results.sort(RESULT_ORDER);
+		List<DpsResult> unique = new ArrayList<>();
+		Set<String> seen = new HashSet<>();
+		for (DpsResult result : results)
+		{
+			if (seen.add(result.getAttackType() + ':' + signature(result.getLoadout())))
+			{
+				unique.add(request.isSellOwnedItems() ? result.withBaselineDps(baselineDps) : result);
+				if (unique.size() >= request.getResultLimit())
 				{
 					break;
 				}
 			}
+		}
+		return unique;
+	}
 
-			for (SearchState state : states)
+	private List<DpsResult> optimizeStyle(BestDpsData data, OptimizationRequest request)
+	{
+		GearBudget budget = new GearBudget(data, request);
+		EnumMap<GearSlot, List<GearItem>> pools = new EnumMap<>(GearSlot.class);
+		for (GearSlot slot : GearSlot.values())
+		{
+			pools.put(slot, new ArrayList<>());
+		}
+		// One dataset pass, not eleven full scans per weapon/style.
+		for (GearItem item : data.getGearItems())
+		{
+			checkCancelled();
+			if (item.getSlot() == null || !item.isStandardGear()
+				|| !request.getRequirementProfile().canEquip(item.getRequirements()) || !allowed(request, budget, item))
 			{
-				Loadout loadout = new Loadout(state.gear);
-				String signature = signature(loadout);
-				if (!seen.add(signature))
+				continue;
+			}
+			if (item.getSlot() == GearSlot.WEAPON && !item.isWeaponFor(request.getStyle()))
+			{
+				continue;
+			}
+			if (item.getSlot() != GearSlot.WEAPON && candidateScore(request, item) <= 0 && !setPiece(item))
+			{
+				continue;
+			}
+			pools.get(item.getSlot()).add(item);
+		}
+		List<GearItem> weapons = shortlist(pools.get(GearSlot.WEAPON), request, budget, WEAPON_LIMIT);
+		if (request.getStyle() != CombatStyle.RANGED)
+		{
+			weapons.add(null);
+		}
+		EnumMap<GearSlot, List<GearItem>> sharedChoices = new EnumMap<>(GearSlot.class);
+		for (GearSlot slot : NON_WEAPON_SLOTS)
+		{
+			if (slot != GearSlot.AMMO)
+			{
+				List<GearItem> selected = shortlist(pools.get(slot), request, budget, SLOT_LIMIT);
+				selected.add(null);
+				sharedChoices.put(slot, selected);
+			}
+		}
+		List<SpellStats> spells = spellsFor(data, request);
+		List<DpsResult> results = new ArrayList<>();
+		Set<String> seen = new HashSet<>();
+		List<SearchTask> tasks = new ArrayList<>();
+		int[] evaluations = {0};
+		for (GearItem weapon : weapons)
+		{
+			checkCancelled();
+			if (evaluations[0] >= MAX_EVALUATIONS_PER_STYLE)
+			{
+				break;
+			}
+			EnumMap<GearSlot, List<GearItem>> choices = new EnumMap<>(GearSlot.class);
+			for (GearSlot slot : NON_WEAPON_SLOTS)
+			{
+				if (slot != GearSlot.AMMO)
+				{
+					choices.put(slot, slot == GearSlot.SHIELD && weapon != null && weapon.isTwoHanded()
+						? java.util.Collections.singletonList(null) : sharedChoices.get(slot));
+					continue;
+				}
+				List<GearItem> available = candidatesForSlotWithWeapon(pools.get(slot), weapon, slot);
+				if (slot == GearSlot.AMMO && RangedAmmo.isBlowpipe(weapon))
+				{
+					available = new ArrayList<>(available);
+					for (GearItem dart : pools.get(GearSlot.WEAPON))
+					{
+						if (RangedAmmo.isDart(dart))
+						{
+							GearItem loaded = new GearItem(dart.getId(), dart.getName(), dart.getVersion(), GearSlot.AMMO,
+								dart.getCategory(), dart.getSpeed(), false, dart.isStandardGear(), dart.isTradeable(),
+								dart.getEstimatedPrice(), StatBlock.ZERO, StatBlock.ZERO,
+								new StatBlock(0, 0, 0, 0, 0, 0, dart.getBonuses().getRangedStrength(), 0, 0), dart.getRequirements());
+							available.add(loaded);
+						}
+					}
+				}
+				List<GearItem> selected = shortlist(available, request, budget, SLOT_LIMIT);
+				if (slot != GearSlot.AMMO || RangedAmmo.compatible(null, weapon))
+				{
+					selected.add(null);
+				}
+				choices.put(slot, selected);
+			}
+			if (choices.get(GearSlot.AMMO).isEmpty())
+			{
+				continue;
+			}
+			Evaluator evaluator = new Evaluator(request, weapon, spells, evaluations);
+			List<EnumMap<GearSlot, GearItem>> seeds = seeds(request, weapon, choices, budget);
+			for (int seedIndex = 0; seedIndex < seeds.size(); seedIndex++)
+			{
+				EnumMap<GearSlot, GearItem> seed = seeds.get(seedIndex);
+				if (!budget.fits(budget.cost(seed)))
 				{
 					continue;
 				}
-				results.add(bestSpellResult(request, loadout, spells).withPurchaseCost(state.cost));
-			}
-		}
-
-		results.sort(Comparator.comparingDouble(DpsResult::getDps).reversed().thenComparingInt(DpsResult::getPurchaseCost));
-		return results.size() > request.getResultLimit() ? new ArrayList<>(results.subList(0, request.getResultLimit())) : results;
-	}
-
-	private DpsResult bestSpellResult(OptimizationRequest request, Loadout loadout, List<SpellStats> spells)
-	{
-		if (request.getStyle() != CombatStyle.MAGIC || !request.isAutoSpell())
-		{
-			return calculator.calculate(request, loadout);
-		}
-		DpsResult best = null;
-		boolean poweredStaff = isPoweredStaff(loadout.getWeapon());
-		if (poweredStaff)
-		{
-			best = best(best, calculator.calculate(request, loadout));
-		}
-		if (!poweredStaff)
-		{
-			for (SpellStats spell : spells)
-			{
-				if (spellAllowed(request, loadout, spell))
+				fillSeed(seed, choices, request, budget, seedIndex == 1);
+				DpsResult initial = evaluator.score(seed);
+				if (initial != null)
 				{
-					best = best(best, calculator.calculate(request.withSpell(spell), loadout));
+					tasks.add(new SearchTask(seed, choices, budget, evaluator, seedIndex == 1, initial));
+					addResult(initial, budget, seen, results);
 				}
 			}
 		}
-		return best == null ? calculator.calculate(request, loadout) : best;
-	}
-
-	private static DpsResult best(DpsResult first, DpsResult second)
-	{
-		if (first == null || second.getDps() > first.getDps())
+		// Score a complete seed for every weapon before spending time refining any one family.
+		tasks.sort(Comparator.comparingDouble((SearchTask task) -> task.initial.getDps()).reversed());
+		for (SearchTask task : tasks)
 		{
-			return second;
-		}
-		return first;
-	}
-
-	private static List<SpellStats> spellsFor(BestDpsData data, OptimizationRequest request)
-	{
-		if (request.getStyle() != CombatStyle.MAGIC || !request.isAutoSpell())
-		{
-			return java.util.Collections.emptyList();
-		}
-		List<SpellStats> spells = new ArrayList<>();
-		for (SpellStats spell : data.getSpells())
-		{
-			if (request.getLevels().getMagic() >= spell.getMagicLevel())
+			if (task.evaluator.exhausted())
 			{
-				spells.add(spell);
+				break;
+			}
+			DpsResult result = improve(task.gear, task.choices, task.budget, task.evaluator, task.reverse, task.initial);
+			addResult(result, task.budget, seen, results);
+		}
+		results.sort(RESULT_ORDER);
+		return new ArrayList<>(results.subList(0, Math.min(request.getResultLimit(), results.size())));
+	}
+
+	private static void addResult(DpsResult result, GearBudget budget, Set<String> seen, List<DpsResult> results)
+	{
+		if (result != null && result.getDps() > 0 && seen.add(signature(result.getLoadout())))
+		{
+			TradePlan plan = budget.plan(result.getLoadout());
+			if (plan.isAffordable())
+			{
+				results.add(result.withTradePlan(plan));
 			}
 		}
-		spells.sort(Comparator.comparingInt(SpellStats::getMaxHit).reversed());
-		return spells.isEmpty() ? data.getSpells() : spells;
 	}
 
-	private List<DpsResult> optimizeAny(BestDpsData data, OptimizationRequest request)
+	private static void fillSeed(EnumMap<GearSlot, GearItem> seed, Map<GearSlot, List<GearItem>> choices,
+		OptimizationRequest request, GearBudget budget, boolean reverse)
 	{
-		List<DpsResult> merged = new ArrayList<>();
-		Set<String> seen = new HashSet<>();
-		for (CombatStyle style : CombatStyle.concreteValues())
+		long total = budget.cost(seed);
+		for (int i = 0; i < NON_WEAPON_SLOTS.length; i++)
 		{
-			OptimizationRequest styled = request.withStyle(style);
-			for (DpsResult result : optimize(data, styled))
+			GearSlot slot = NON_WEAPON_SLOTS[reverse ? NON_WEAPON_SLOTS.length - i - 1 : i];
+			if (seed.containsKey(slot) && slot != GearSlot.AMMO)
 			{
-				String signature = result.getAttackType() + ":" + signature(result.getLoadout());
-				if (seen.add(signature))
+				continue;
+			}
+			GearItem selected = seed.get(slot);
+			long baseCost = total - budget.cost(selected);
+			double bestScore = selected == null ? 0 : candidateScore(request, selected);
+			for (GearItem candidate : choices.get(slot))
+			{
+				if (candidate != null && budget.fits(baseCost + budget.cost(candidate)))
 				{
-					merged.add(result);
+					double score = candidateScore(request, candidate);
+					if (score > bestScore || score == bestScore && budget.cost(candidate) < budget.cost(selected))
+					{
+						selected = candidate;
+						bestScore = score;
+					}
+				}
+			}
+			put(seed, slot, selected);
+			total = baseCost + budget.cost(selected);
+		}
+	}
+
+	private static final class SearchTask
+	{
+		private final EnumMap<GearSlot, GearItem> gear;
+		private final Map<GearSlot, List<GearItem>> choices;
+		private final GearBudget budget;
+		private final Evaluator evaluator;
+		private final boolean reverse;
+		private final DpsResult initial;
+
+		private SearchTask(EnumMap<GearSlot, GearItem> gear, Map<GearSlot, List<GearItem>> choices,
+			GearBudget budget, Evaluator evaluator, boolean reverse, DpsResult initial)
+		{
+			this.gear = gear;
+			this.choices = choices;
+			this.budget = budget;
+			this.evaluator = evaluator;
+			this.reverse = reverse;
+			this.initial = initial;
+		}
+	}
+
+	private DpsResult improve(EnumMap<GearSlot, GearItem> gear, Map<GearSlot, List<GearItem>> choices,
+		GearBudget budget, Evaluator evaluator, boolean reverse, DpsResult initial)
+	{
+		DpsResult current = initial;
+		long cost = budget.cost(gear);
+		for (int pass = 0; pass < 3; pass++)
+		{
+			boolean changed = false;
+			for (int index = 0; index < NON_WEAPON_SLOTS.length; index++)
+			{
+				GearSlot slot = NON_WEAPON_SLOTS[reverse ? NON_WEAPON_SLOTS.length - 1 - index : index];
+				GearItem original = gear.get(slot);
+				GearItem bestItem = original;
+				DpsResult bestResult = current;
+				long bestCost = cost;
+				for (GearItem candidate : choices.get(slot))
+				{
+					if (candidate == original || evaluator.exhausted())
+					{
+						continue;
+					}
+					long trialCost = cost - budget.cost(original) + budget.cost(candidate);
+					if (!budget.fits(trialCost))
+					{
+						continue;
+					}
+					put(gear, slot, candidate);
+					DpsResult trial = evaluator.score(gear);
+					if (trial != null && (bestResult == null || trial.getDps() > bestResult.getDps()
+						|| trial.getDps() == bestResult.getDps() && trialCost < bestCost))
+					{
+						bestItem = candidate;
+						bestResult = trial;
+						bestCost = trialCost;
+					}
+				}
+				put(gear, slot, bestItem);
+				changed |= bestItem != original;
+				current = bestResult;
+				cost = bestCost;
+			}
+			if (!changed || evaluator.exhausted())
+			{
+				break;
+			}
+		}
+		// A downgrade in one slot can fund a larger gain elsewhere. Single-slot hill climbing
+		// cannot cross that budget boundary, so inspect bounded two-slot exchanges as well.
+		if (current != null && !evaluator.exhausted())
+		{
+			current = improveExchange(gear, choices, budget, evaluator, current);
+		}
+		return current;
+	}
+
+	private DpsResult improveExchange(EnumMap<GearSlot, GearItem> gear, Map<GearSlot, List<GearItem>> choices,
+		GearBudget budget, Evaluator evaluator, DpsResult current)
+	{
+		long cost = budget.cost(gear);
+		DpsResult best = current;
+		EnumMap<GearSlot, GearItem> bestGear = new EnumMap<>(gear);
+		for (GearSlot donor : NON_WEAPON_SLOTS)
+		{
+			GearItem original = gear.get(donor);
+			if (budget.cost(original) == 0)
+			{
+				continue;
+			}
+			List<GearItem> cheaper = new ArrayList<>(choices.get(donor));
+			cheaper.sort(Comparator.comparingLong((GearItem item) -> budget.cost(item)));
+			for (int i = 0; i < Math.min(2, cheaper.size()); i++)
+			{
+				GearItem replacement = cheaper.get(i);
+				long freed = budget.cost(original) - budget.cost(replacement);
+				if (freed <= 0)
+				{
+					continue;
+				}
+				put(gear, donor, replacement);
+				for (GearSlot receiver : NON_WEAPON_SLOTS)
+				{
+					if (receiver == donor)
+					{
+						continue;
+					}
+					GearItem old = gear.get(receiver);
+					List<GearItem> options = choices.get(receiver);
+					for (int j = 0; j < Math.min(4, options.size()); j++)
+					{
+						GearItem candidate = options.get(j);
+						long newCost = cost - freed - budget.cost(old) + budget.cost(candidate);
+						if (candidate == old || !budget.fits(newCost) || evaluator.exhausted())
+						{
+							continue;
+						}
+						put(gear, receiver, candidate);
+						DpsResult trial = evaluator.score(gear);
+						if (trial != null && trial.getDps() > best.getDps())
+						{
+							best = trial;
+							bestGear = new EnumMap<>(gear);
+						}
+					}
+					put(gear, receiver, old);
+				}
+				put(gear, donor, original);
+			}
+		}
+		gear.clear();
+		gear.putAll(bestGear);
+		return best;
+	}
+
+	private static List<EnumMap<GearSlot, GearItem>> seeds(OptimizationRequest request, GearItem weapon,
+		Map<GearSlot, List<GearItem>> choices, GearBudget budget)
+	{
+		EnumMap<GearSlot, GearItem> base = new EnumMap<>(GearSlot.class);
+		put(base, GearSlot.WEAPON, weapon);
+		// Start with the cheapest legal ammo. Missing mandatory ammo must never produce a scored bow.
+		GearItem ammo = null;
+		long ammoCost = Long.MAX_VALUE;
+		for (GearItem candidate : choices.get(GearSlot.AMMO))
+		{
+			if (budget.cost(candidate) < ammoCost)
+			{
+				ammo = candidate;
+				ammoCost = budget.cost(candidate);
+			}
+		}
+		put(base, GearSlot.AMMO, ammo);
+		List<EnumMap<GearSlot, GearItem>> result = new ArrayList<>();
+		result.add(new EnumMap<>(base));
+		result.add(new EnumMap<>(base)); // alternate slot order explores different budget allocations
+		String voidHelm = request.getStyle() == CombatStyle.MELEE ? "void melee helm"
+			: request.getStyle() == CombatStyle.RANGED ? "void ranger helm" : "void mage helm";
+		addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS, GearSlot.HANDS},
+			new String[]{voidHelm, "void knight top", "void knight robe", "void knight gloves"});
+		addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS, GearSlot.HANDS},
+			new String[]{voidHelm, "elite void top", "elite void robe", "void knight gloves"});
+		if (request.getStyle() == CombatStyle.MELEE)
+		{
+			addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS, GearSlot.NECK},
+				new String[]{"obsidian helmet", "obsidian platebody", "obsidian platelegs", "berserker necklace"});
+			addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS},
+				new String[]{"inquisitor's great helm", "inquisitor's hauberk", "inquisitor's plateskirt"});
+			if (label(weapon).contains("dual macuahuitl"))
+			{
+				addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS},
+					new String[]{"blood moon helm", "blood moon chestplate", "blood moon tassets"});
+			}
+		}
+		if (label(weapon).contains("crystal bow") || label(weapon).contains("bow of faerdhinen"))
+		{
+			addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS},
+				new String[]{"crystal helm", "crystal body", "crystal legs"});
+		}
+		for (String barrows : new String[]{"dharok", "ahrim", "karil"})
+		{
+			if (label(weapon).contains(barrows))
+			{
+				addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS},
+					new String[]{barrows, barrows, barrows});
+				if (!barrows.equals("dharok"))
+				{
+					addSetSeed(result, base, choices, new GearSlot[]{GearSlot.HEAD, GearSlot.BODY, GearSlot.LEGS, GearSlot.NECK},
+						new String[]{barrows, barrows, barrows, "amulet of the damned"});
 				}
 			}
 		}
-		merged.sort(Comparator.comparingDouble(DpsResult::getDps).reversed().thenComparingInt(DpsResult::getPurchaseCost));
-		return merged.size() > request.getResultLimit() ? new ArrayList<>(merged.subList(0, request.getResultLimit())) : merged;
+		return result;
 	}
 
-	private List<GearItem> candidates(BestDpsData data, OptimizationRequest request, GearSlot slot, int limit)
+	private static void addSetSeed(List<EnumMap<GearSlot, GearItem>> seeds, Map<GearSlot, GearItem> base,
+		Map<GearSlot, List<GearItem>> choices, GearSlot[] slots, String[] names)
 	{
-		List<GearItem> rows = new ArrayList<>();
-		for (GearItem item : data.getGearItems())
+		EnumMap<GearSlot, GearItem> seed = new EnumMap<>(base);
+		for (int index = 0; index < slots.length; index++)
 		{
-			if (item.getSlot() != slot || !item.isStandardGear())
+			GearItem match = null;
+			for (GearItem item : choices.get(slots[index]))
 			{
-				continue;
+				if (label(item).contains(names[index]))
+				{
+					match = item;
+					break;
+				}
 			}
-			if (!request.getRequirementProfile().canEquip(item.getRequirements()))
+			if (match == null)
 			{
-				continue;
+				return;
 			}
-			if (slot == GearSlot.WEAPON && !item.isWeaponFor(request.getStyle()))
-			{
-				continue;
-			}
-			if (slot != GearSlot.WEAPON && candidateScore(request, item) <= 0)
-			{
-				continue;
-			}
-			if (!allowedByMode(request, item))
-			{
-				continue;
-			}
-			rows.add(item);
+			seed.put(slots[index], match);
 		}
+		seeds.add(seed);
+	}
 
-		rows.sort(Comparator.comparingDouble((GearItem item) -> candidateScore(request, item)).reversed().thenComparingInt(GearItem::getPriceOrZero));
-		rows = dedupe(rows, request);
-		if (rows.size() > limit)
+	private static void put(Map<GearSlot, GearItem> gear, GearSlot slot, GearItem item)
+	{
+		if (item == null)
 		{
-			rows = new ArrayList<>(rows.subList(0, limit));
+			gear.remove(slot);
 		}
-		if (slot != GearSlot.WEAPON)
+		else
 		{
-			rows.add(0, null);
+			gear.put(slot, item);
 		}
-		return rows;
+	}
+
+	private static List<GearItem> shortlist(List<GearItem> source, OptimizationRequest request, GearBudget budget, int limit)
+	{
+		List<GearItem> sorted = new ArrayList<>(source);
+		sorted.removeIf(java.util.Objects::isNull);
+		sorted.sort(Comparator.comparingDouble((GearItem item) -> candidateScore(request, item)).reversed()
+			.thenComparingLong(budget::cost).thenComparingInt(GearItem::getId));
+		// Only collapse identical named variants. Equal stats do not make different item effects equivalent.
+		Map<String, GearItem> unique = new java.util.LinkedHashMap<>();
+		for (GearItem item : sorted)
+		{
+			String key = item.getName().toLowerCase(Locale.ROOT) + ':' + item.getVersion() + ':' + item.getSpeed()
+				+ ':' + item.getOffensive().getStab() + ':' + item.getOffensive().getSlash() + ':' + item.getOffensive().getCrush()
+				+ ':' + item.getOffensive().getMagic() + ':' + item.getOffensive().getRanged()
+				+ ':' + item.getBonuses().getStrength() + ':' + item.getBonuses().getRangedStrength() + ':' + item.getBonuses().getMagicDamage();
+			GearItem previous = unique.get(key);
+			if (previous == null || budget.cost(item) < budget.cost(previous))
+			{
+				unique.put(key, item);
+			}
+		}
+		sorted = new ArrayList<>(unique.values());
+		List<GearItem> result = new ArrayList<>(sorted.subList(0, Math.min(limit, sorted.size())));
+		// Preserve cheap routes, owned gear and whole-set pieces alongside top raw stats.
+		List<GearItem> cheap = new ArrayList<>(sorted);
+		cheap.sort(Comparator.comparingLong((GearItem item) -> budget.cost(item))
+			.thenComparing(Comparator.comparingDouble((GearItem item) -> candidateScore(request, item)).reversed()));
+		for (int i = 0; i < Math.min(4, cheap.size()); i++)
+		{
+			if (!result.contains(cheap.get(i)))
+			{
+				result.add(cheap.get(i));
+			}
+		}
+		Set<String> sets = new HashSet<>();
+		int ownedAdded = 0;
+		for (GearItem item : sorted)
+		{
+			if (result.contains(item))
+			{
+				continue;
+			}
+			if (setPiece(item) && sets.add(item.getName().toLowerCase(Locale.ROOT))
+				|| item.getSlot() == GearSlot.AMMO && item.getNormalizedName().contains("bolts (e)")
+				|| budget.reusesOwned(item) && ownedAdded++ < 4)
+			{
+				result.add(item);
+			}
+		}
+		return result;
 	}
 
 	private static List<GearItem> candidatesForSlotWithWeapon(List<GearItem> candidates, GearItem weapon, GearSlot slot)
 	{
 		if (slot == GearSlot.SHIELD && weapon != null && weapon.isTwoHanded())
 		{
-			return java.util.Collections.singletonList(null);
+			return java.util.Collections.emptyList();
 		}
 		if (slot != GearSlot.AMMO)
 		{
@@ -239,66 +552,231 @@ public final class BestDpsOptimizer
 				result.add(item);
 			}
 		}
-		if (result.isEmpty() && RangedAmmo.compatible(null, weapon))
-		{
-			return java.util.Collections.singletonList(null);
-		}
 		return result;
+	}
+
+	private static boolean allowed(OptimizationRequest request, GearBudget budget, GearItem item)
+	{
+		if (!item.isTradeable())
+		{
+			return request.isIncludeUntradeables() && request.getOwnedItems().owns(item.getId());
+		}
+		if (request.getCandidateMode() == CandidateMode.OWNED_ONLY)
+		{
+			return request.getOwnedItems().owns(item.getId());
+		}
+		return budget.reusesOwned(item) || item.getPriceOrZero() > 0 && budget.fits(budget.cost(item));
+	}
+
+	private static boolean setPiece(GearItem item)
+	{
+		String name = label(item);
+		return name.contains("void") || name.contains("obsidian") || name.contains("berserker necklace") || name.contains("amulet of the damned")
+			|| name.contains("inquisitor") || name.contains("crystal helm") || name.contains("crystal body")
+			|| name.contains("crystal legs") || name.contains("blood moon") || name.contains("dharok")
+			|| name.contains("ahrim") || name.contains("karil");
 	}
 
 	private static double candidateScore(OptimizationRequest request, GearItem item)
 	{
 		double score = item.roughScore(request.getStyle());
-		if (slayerTaskHeadCandidate(request, item))
+		if (item.getSlot() == GearSlot.WEAPON)
 		{
-			score += 10_000.0;
+			score = (score + 64) / Math.max(2, item.getSpeed() - (request.getStyle() == CombatStyle.RANGED ? 1 : 0));
 		}
 		String name = label(item);
-		if (request.getMonster() != null)
+		if (request.isOnSlayerTask() && item.isSlayerHead()
+			&& (request.getStyle() == CombatStyle.MELEE || item.isImbuedSlayerHead()))
 		{
-			if (request.getMonster().hasAttribute("undead") && name.contains("salve amulet"))
-			{
-				score += 5_000.0;
-			}
-			if (request.getMonster().hasAttribute("dragon") && name.contains("dragon hunter"))
-			{
-				score += 4_500.0;
-			}
-			if (request.getMonster().hasAttribute("demon") && (name.contains("arclight") || name.contains("emberlight") || name.contains("darklight") || name.contains("silverlight") || name.contains("scorching bow")))
-			{
-				score += 4_000.0;
-			}
-			if (request.getMonster().hasAttribute("kalphite") && name.contains("keris"))
-			{
-				score += 3_000.0;
-			}
+			score += 10_000;
 		}
-		if (request.getStyle() == CombatStyle.RANGED && (name.contains("crystal helm") || name.contains("crystal body") || name.contains("crystal legs") || name.contains("bow of faerdhinen") || name.contains("crystal bow")))
+		if (request.getMonster().hasAttribute("undead") && name.contains("salve amulet"))
 		{
-			score += 2_500.0;
+			score += 5_000;
 		}
-		if (request.getStyle() == CombatStyle.MELEE && (name.contains("obsidian helmet") || name.contains("obsidian platebody") || name.contains("obsidian platelegs") || name.contains("berserker necklace") || isTzhaarWeapon(name)))
+		if (request.getMonster().hasAttribute("dragon") && name.contains("dragon hunter")
+			|| request.getMonster().hasAttribute("demon") && (name.contains("arclight") || name.contains("emberlight") || name.contains("darklight") || name.contains("silverlight") || name.contains("scorching")))
 		{
-			score += 2_000.0;
+			score += 4_000;
 		}
-		if (request.getStyle() == CombatStyle.MELEE && (name.contains("inquisitor's great helm") || name.contains("inquisitor's hauberk") || name.contains("inquisitor's plateskirt") || name.contains("inquisitor's mace")))
+		if (request.getMonster().hasAttribute("kalphite") && name.contains("keris"))
 		{
-			score += 1_750.0;
+			score += 3_000;
+		}
+		String target = request.getMonster().normalizedName();
+		if (target.contains("lesarkus") && name.startsWith("ice arrow")
+			|| target.equals("fareed") && name.startsWith("ice gloves")
+			|| target.equals("salarin the twisted") && (name.contains("elemental amulet")
+				|| name.startsWith("amulet of air") || name.startsWith("amulet of water") || name.startsWith("amulet of earth") || name.startsWith("amulet of fire")))
+		{
+			score += 7_000;
+		}
+		if (request.getMonster().hasAttribute("leafy") && (name.startsWith("leaf-bladed") || name.contains("broad")
+			|| name.contains("slayer's staff") || name.contains("staff of the dead") || name.contains("staff of light") || name.contains("staff of balance"))
+			|| target.contains("slagilith") && name.contains("pickaxe")
+			|| request.getMonster().hasAttribute("vampyre3") && (name.contains("ivandis") || name.contains("blisterwood"))
+			|| request.getMonster().hasAttribute("vampyre2") && (name.contains("silver") || name.contains("ivandis")
+				|| name.contains("blisterwood") || name.contains("efaritay"))
+			|| target.equals("corporeal beast") && (item.getCategory().equalsIgnoreCase("spear") || name.contains("halberd")))
+		{
+			score += 6_000;
+		}
+		if ((target.equals("zulrah") || request.getMonster().hasAttribute("flying")) && name.contains("halberd")
+			|| target.contains("tormented demon") && (item.getCategory().toLowerCase(Locale.ROOT).contains("crossbow")
+				|| name.contains("ballista") || item.getOffensive().getCrush() > 0 && item.getSpeed() >= 5)
+			|| target.contains("hueycoatl") && (name.contains("macuahuitl") || name.contains("temotli") || name.contains("torag's hammers")))
+		{
+			score += 2_000;
+		}
+		if (name.contains("twisted bow") || name.contains("tumeken") || name.contains("scythe") || name.contains("osmumten")
+			|| name.contains("bow of faerdhinen") || name.contains("crystal bow") || name.contains("soulreaper")
+			|| name.contains("blowpipe") || name.contains("dual macuahuitl") || isTzhaarWeapon(name))
+		{
+			score += 1_000;
 		}
 		return score;
 	}
 
-	private static boolean slayerTaskHeadCandidate(OptimizationRequest request, GearItem item)
+	private static List<SpellStats> spellsFor(BestDpsData data, OptimizationRequest request)
 	{
-		if (!request.isOnSlayerTask() || request.getMonster() == null || !request.getMonster().isSlayerMonster() || item == null || !item.isSlayerHead())
+		Map<String, SpellStats> best = new java.util.LinkedHashMap<>();
+		for (SpellStats spell : data.getSpells())
+		{
+			if (request.getMonster().normalizedName().equals("salarin the twisted") && !spell.getName().endsWith(" Strike"))
+			{
+				continue;
+			}
+			if (!spellUnlocked(request, spell))
+			{
+				continue;
+			}
+			// Elemental tiers and ancient spell families share effects; keep their highest hit.
+			String family = spell.getName().split(" ")[0];
+			String key = spell.getSpellbook() + ':' + spell.getElement() + ':' + family;
+			SpellStats current = best.get(key);
+			if (current == null || spell.getMaxHit() > current.getMaxHit())
+			{
+				best.put(key, spell);
+			}
+		}
+		return new ArrayList<>(best.values());
+	}
+
+	private final class Evaluator
+	{
+		private final List<OptimizationRequest> variants = new ArrayList<>();
+		// Loadout owns an immutable gear copy. Map equality checks every slot/item;
+		// hash collisions cannot reuse a different setup, and lookup needs no key allocation.
+		private final Map<Map<GearSlot, GearItem>, DpsResult> scores = new java.util.HashMap<>();
+		private final int[] evaluations;
+
+		private Evaluator(OptimizationRequest request, GearItem weapon, List<SpellStats> spells, int[] evaluations)
+		{
+			this.evaluations = evaluations;
+			if (request.getStyle() != CombatStyle.MAGIC || request.isAutoSpell() && isPoweredStaff(weapon))
+			{
+				variants.add(request);
+			}
+			else
+			{
+				EnumMap<GearSlot, GearItem> gear = new EnumMap<>(GearSlot.class);
+				put(gear, GearSlot.WEAPON, weapon);
+				Loadout loadout = new Loadout(gear);
+				List<SpellStats> options = request.isAutoSpell() ? spells : java.util.Collections.singletonList(request.getSpell());
+				for (SpellStats spell : options)
+				{
+					if (spell.getMagicLevel() <= request.getLevels().getMagic() && spellAllowed(request, loadout, spell))
+					{
+						variants.add(request.withSpell(spell));
+					}
+				}
+			}
+		}
+
+		private boolean exhausted()
+		{
+			return evaluations[0] >= MAX_EVALUATIONS_PER_STYLE;
+		}
+
+		private DpsResult score(Map<GearSlot, GearItem> gear)
+		{
+			checkCancelled();
+			DpsResult cached = scores.get(gear);
+			if (cached != null)
+			{
+				return cached;
+			}
+			if (exhausted() || variants.isEmpty())
+			{
+				return null;
+			}
+			evaluations[0]++;
+			Loadout loadout = new Loadout(gear);
+			DpsResult best = null;
+			for (OptimizationRequest variant : variants)
+			{
+				DpsResult next = calculator.calculate(variant, loadout);
+				if (best == null || next.getDps() > best.getDps())
+				{
+					best = next;
+				}
+			}
+			if (best != null)
+			{
+				scores.put(best.getLoadout().getGear(), best);
+			}
+			return best;
+		}
+	}
+
+	private static void checkCancelled()
+	{
+		if (Thread.currentThread().isInterrupted())
+		{
+			throw new java.util.concurrent.CancellationException("DPS search superseded");
+		}
+	}
+
+	private static boolean spellUnlocked(OptimizationRequest request, SpellStats spell)
+	{
+		if (spell == null || request.getLevels().getMagic() < spell.getMagicLevel())
 		{
 			return false;
 		}
-		return request.getStyle() == CombatStyle.MELEE || item.isImbuedSlayerHead();
+		RequirementProfile profile = request.getRequirementProfile();
+		String name = spell.getName();
+		if (spell.getSpellbook().equalsIgnoreCase("ancient") && !profile.hasCompletedQuest(Quest.DESERT_TREASURE_I))
+		{
+			return false;
+		}
+		if (spell.getSpellbook().equalsIgnoreCase("arceuus") && !name.equals("Ghostly Grasp") && !name.equals("Inferior Demonbane")
+			&& !profile.hasCompletedQuest(Quest.A_KINGDOM_DIVIDED))
+		{
+			return false;
+		}
+		if (name.equals("Iban Blast") && !profile.hasCompletedQuest(Quest.UNDERGROUND_PASS))
+		{
+			return false;
+		}
+		if (name.equals("Magic Dart") && profile.level(Skill.SLAYER) < 55)
+		{
+			return false;
+		}
+		if (name.equals("Saradomin Strike") || name.equals("Claws of Guthix") || name.equals("Flames of Zamorak"))
+		{
+			// The snapshot does not capture each spell's 100 arena casts. Mage Arena II
+			// completion proves all three unlocks; MAXED includes every completed quest.
+			return profile.hasCompletedQuest(Quest.MAGE_ARENA_II);
+		}
+		return true;
 	}
 
 	private static boolean spellAllowed(OptimizationRequest request, Loadout loadout, SpellStats spell)
 	{
+		if (!spellUnlocked(request, spell))
+		{
+			return false;
+		}
 		String spellName = spell.getName();
 		String weapon = label(loadout.getWeapon());
 		if (isPoweredStaff(loadout.getWeapon()))
@@ -346,7 +824,7 @@ public final class BestDpsOptimizer
 
 	private static String label(GearItem item)
 	{
-		return item == null ? "" : item.label().toLowerCase(Locale.ROOT);
+		return item == null ? "" : item.getNormalizedLabel();
 	}
 
 	private static boolean isPoweredStaff(GearItem weapon)
@@ -372,90 +850,6 @@ public final class BestDpsOptimizer
 			|| name.contains("toktz-mej-tal");
 	}
 
-	private static boolean allowedByMode(OptimizationRequest request, GearItem item)
-	{
-		if (!item.isTradeable())
-		{
-			return canUseUntradeable(request, item);
-		}
-		boolean owned = request.getOwnedItems().owns(item.getId());
-		switch (request.getCandidateMode())
-		{
-			case ALL_STANDARD:
-				return item.getEstimatedPrice() != null || owned;
-			case OWNED_ONLY:
-				return owned;
-			case OWNED_OR_BUDGET:
-				return owned || affordable(request, item);
-			case BUDGET:
-			default:
-				return affordable(request, item);
-		}
-	}
-
-	private static boolean affordable(OptimizationRequest request, GearItem item)
-	{
-		if (!item.isTradeable() || item.getEstimatedPrice() == null)
-		{
-			return false;
-		}
-		return item.getPriceOrZero() <= request.getBudget();
-	}
-
-	private static boolean canUseUntradeable(OptimizationRequest request, GearItem item)
-	{
-		return item != null && request.isIncludeUntradeables() && !item.isTradeable() && request.getOwnedItems().owns(item.getId());
-	}
-
-	private static int budgetCost(OptimizationRequest request, GearItem item)
-	{
-		if (item == null || request.getOwnedItems().owns(item.getId()))
-		{
-			return 0;
-		}
-		return item.getPriceOrZero();
-	}
-
-	private static boolean withinBudget(OptimizationRequest request, int cost)
-	{
-		return request.getCandidateMode() == CandidateMode.ALL_STANDARD || cost <= request.getBudget();
-	}
-
-	private static List<GearItem> dedupe(List<GearItem> rows, OptimizationRequest request)
-	{
-		Map<String, GearItem> best = new java.util.LinkedHashMap<>();
-		for (GearItem item : rows)
-		{
-			String key = item.getSlot() + ":" + item.getCategory() + ":" + item.getSpeed() + ":" + item.isTwoHanded()
-				+ ":" + item.getOffensive().getAttackBonus("stab")
-				+ ":" + item.getOffensive().getAttackBonus("slash")
-				+ ":" + item.getOffensive().getAttackBonus("crush")
-				+ ":" + item.getOffensive().getAttackBonus("magic")
-				+ ":" + item.getOffensive().getAttackBonus("ranged")
-				+ ":" + item.getBonuses().getStrength()
-				+ ":" + item.getBonuses().getRangedStrength()
-				+ ":" + item.getBonuses().getMagicDamage()
-				+ ":" + request.getStyle();
-			GearItem current = best.get(key);
-			if (current == null || betterEquivalent(request, item, current))
-			{
-				best.put(key, item);
-			}
-		}
-		return new ArrayList<>(best.values());
-	}
-
-	private static boolean betterEquivalent(OptimizationRequest request, GearItem candidate, GearItem current)
-	{
-		boolean candidateOwned = request.getOwnedItems().owns(candidate.getId());
-		boolean currentOwned = request.getOwnedItems().owns(current.getId());
-		if (candidateOwned != currentOwned)
-		{
-			return candidateOwned;
-		}
-		return budgetCost(request, candidate) < budgetCost(request, current);
-	}
-
 	private static String signature(Loadout loadout)
 	{
 		StringBuilder builder = new StringBuilder();
@@ -472,32 +866,4 @@ public final class BestDpsOptimizer
 		return builder.toString();
 	}
 
-	private static final class SearchState
-	{
-		private final EnumMap<GearSlot, GearItem> gear;
-		private final int cost;
-		private final double score;
-
-		private SearchState(EnumMap<GearSlot, GearItem> gear, int cost)
-		{
-			this(gear, cost, 0.0);
-		}
-
-		private SearchState(EnumMap<GearSlot, GearItem> gear, int cost, double score)
-		{
-			this.gear = gear;
-			this.cost = cost;
-			this.score = score;
-		}
-
-		private int getCost()
-		{
-			return cost;
-		}
-
-		private double getScore()
-		{
-			return score;
-		}
-	}
 }

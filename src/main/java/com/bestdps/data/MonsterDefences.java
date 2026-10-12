@@ -61,4 +61,9 @@ public final class MonsterDefences
 	{
 		return flatArmour;
 	}
+
+	public MonsterDefences withMagic(int magicBonus)
+	{
+		return new MonsterDefences(stab, slash, crush, magicBonus, ranged, flatArmour, light, standard, heavy);
+	}
 }

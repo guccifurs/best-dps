@@ -1,0 +1,38 @@
+{
+  "source": "OSRS Wiki contributors, numerical combat data distributed by the Wiki DPS calculator",
+  "repository": "https://github.com/weirdgloop/osrs-dps-calc",
+  "revision": "89c3e25b344aea90d0189746e4b5f73dde0f0383",
+  "dataPages": "https://oldschool.runescape.wiki/",
+  "attribution": "https://oldschool.runescape.wiki/w/RuneScape:Copyrights",
+  "implementation": "No GPL calculator source is imported by this script.",
+  "monsterVariants": 2860,
+  "distinctNpcIds": 2817,
+  "gearVariants": 5436,
+  "spells": 61,
+  "gearAwaitingMetadata": [
+    {
+      "id": 33713,
+      "name": "Blisterwood sickle (e)",
+      "version": ""
+    },
+    {
+      "id": 33709,
+      "name": "Diamond sickle (b)",
+      "version": ""
+    },
+    {
+      "id": 33711,
+      "name": "Enchanted diamond sickle (b)",
+      "version": ""
+    }
+  ],
+  "resourceSha256Uncompressed": {
+    "monsters": "d154835abf33739aa94fbbdec5e85fe40268b04e79ee09ea4fb09799a32859bb",
+    "gear_prices": "b39cebe133bb173c0ae3a8c77e2723d6885e15500405709eb4ae5160ad55cd40",
+    "spells": "a540fe9323dd47b7b123ff683794920390b8840a24590347bb404c642412d34a",
+    "equipment_requirements": "e23b53b353821877fe544f5477f4557c26585e3d8337532c43affb271ec6bda2"
+  },
+  "metadataOverrides": "scripts/gear_metadata_overrides.json",
+  "verifiedGearMetadataOverrides": 168,
+  "gearMetadataSources": "scripts/gear_metadata_overrides.json"
+}

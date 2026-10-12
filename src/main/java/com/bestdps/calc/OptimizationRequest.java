@@ -17,6 +17,9 @@ public final class OptimizationRequest
 	private final OwnedItems ownedItems;
 	private final RequirementProfile requirementProfile;
 	private final int resultLimit;
+	private final boolean sellOwnedItems;
+	private final EncounterContext encounterContext;
+	private final CombatContext combatContext;
 
 	public OptimizationRequest(
 		MonsterStats monster,
@@ -48,6 +51,16 @@ public final class OptimizationRequest
 		RequirementProfile requirementProfile,
 		int resultLimit)
 	{
+		this(monster, style, levels, prayers, spell, budget, candidateMode, includeUntradeables, onSlayerTask,
+			ownedItems, requirementProfile, resultLimit, false, EncounterContext.DEFAULT, CombatContext.DEFAULT);
+	}
+
+	private OptimizationRequest(
+		MonsterStats monster, CombatStyle style, PlayerLevels levels, PrayerBonuses prayers, SpellStats spell,
+		int budget, CandidateMode candidateMode, boolean includeUntradeables, boolean onSlayerTask,
+		OwnedItems ownedItems, RequirementProfile requirementProfile, int resultLimit,
+		boolean sellOwnedItems, EncounterContext encounterContext, CombatContext combatContext)
+	{
 		this.monster = monster;
 		this.style = style;
 		this.levels = levels;
@@ -60,6 +73,9 @@ public final class OptimizationRequest
 		this.ownedItems = ownedItems == null ? OwnedItems.EMPTY : ownedItems;
 		this.requirementProfile = requirementProfile == null ? RequirementProfile.MAXED : requirementProfile;
 		this.resultLimit = Math.max(1, Math.min(50, resultLimit));
+		this.sellOwnedItems = sellOwnedItems;
+		this.encounterContext = encounterContext == null ? EncounterContext.DEFAULT : encounterContext;
+		this.combatContext = combatContext == null ? CombatContext.DEFAULT : combatContext;
 	}
 
 	public MonsterStats getMonster()
@@ -127,6 +143,45 @@ public final class OptimizationRequest
 		return resultLimit;
 	}
 
+	public boolean isSellOwnedItems()
+	{
+		return sellOwnedItems && candidateMode == CandidateMode.OWNED_OR_BUDGET;
+	}
+
+	public EncounterContext getEncounterContext()
+	{
+		return encounterContext;
+	}
+
+	public CombatContext getCombatContext()
+	{
+		return combatContext;
+	}
+
+	public OptimizationRequest withCombatContext(CombatContext context)
+	{
+		return new OptimizationRequest(monster, style, levels, prayers, spell, budget, candidateMode,
+			includeUntradeables, onSlayerTask, ownedItems, requirementProfile, resultLimit, sellOwnedItems, encounterContext, context);
+	}
+
+	public OptimizationRequest withSellOwnedItems(boolean enabled)
+	{
+		return new OptimizationRequest(monster, style, levels, prayers, spell, budget, candidateMode,
+			includeUntradeables, onSlayerTask, ownedItems, requirementProfile, resultLimit, enabled, encounterContext, combatContext);
+	}
+
+	public OptimizationRequest withEncounterContext(EncounterContext context)
+	{
+		return new OptimizationRequest(monster, style, levels, prayers, spell, budget, candidateMode,
+			includeUntradeables, onSlayerTask, ownedItems, requirementProfile, resultLimit, sellOwnedItems, context, combatContext);
+	}
+
+	public OptimizationRequest withMonster(MonsterStats target)
+	{
+		return new OptimizationRequest(target, style, levels, prayers, spell, budget, candidateMode,
+			includeUntradeables, onSlayerTask, ownedItems, requirementProfile, resultLimit, sellOwnedItems, encounterContext, combatContext);
+	}
+
 	public OptimizationRequest withStyle(CombatStyle style)
 	{
 		return new OptimizationRequest(
@@ -141,7 +196,7 @@ public final class OptimizationRequest
 			onSlayerTask,
 			ownedItems,
 			requirementProfile,
-			resultLimit);
+			resultLimit, sellOwnedItems, encounterContext, combatContext);
 	}
 
 	public OptimizationRequest withSpell(SpellStats spell)
@@ -158,6 +213,6 @@ public final class OptimizationRequest
 			onSlayerTask,
 			ownedItems,
 			requirementProfile,
-			resultLimit);
+			resultLimit, sellOwnedItems, encounterContext, combatContext);
 	}
 }

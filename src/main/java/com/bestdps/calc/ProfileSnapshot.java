@@ -19,6 +19,7 @@ public final class ProfileSnapshot
 	private final PlayerLevels currentLevels;
 	private final Set<Prayer> activePrayers;
 	private final String source;
+	private final PrayerBonuses availablePrayers;
 
 	public ProfileSnapshot(
 		RequirementProfile requirements,
@@ -27,6 +28,14 @@ public final class ProfileSnapshot
 		Set<Prayer> activePrayers,
 		String source)
 	{
+		this(requirements, baseLevels, currentLevels, activePrayers, source,
+			PrayerBonuses.bestAvailable(baseLevels == null ? PlayerLevels.MAXED : baseLevels));
+	}
+
+	public ProfileSnapshot(RequirementProfile requirements, PlayerLevels baseLevels,
+		PlayerLevels currentLevels, Set<Prayer> activePrayers, String source, PrayerBonuses availablePrayers)
+	{
+		this.availablePrayers = availablePrayers;
 		this.requirements = requirements == null ? RequirementProfile.MAXED : requirements;
 		this.baseLevels = baseLevels == null ? PlayerLevels.MAXED : baseLevels;
 		this.currentLevels = currentLevels == null ? this.baseLevels : currentLevels;
@@ -35,6 +44,8 @@ public final class ProfileSnapshot
 			: Collections.unmodifiableSet(EnumSet.copyOf(activePrayers));
 		this.source = source == null ? "" : source;
 	}
+
+	public PrayerBonuses getAvailablePrayers() { return availablePrayers; }
 
 	public RequirementProfile getRequirements()
 	{

@@ -6,6 +6,8 @@ public final class GearItem
 {
 	private final int id;
 	private final String name;
+	private final String normalizedName;
+	private final String normalizedLabel;
 	private final String version;
 	private final GearSlot slot;
 	private final String category;
@@ -14,6 +16,8 @@ public final class GearItem
 	private final boolean standardGear;
 	private final boolean tradeable;
 	private final Integer estimatedPrice;
+	private int sellPrice;
+	private long quoteTime;
 	private final StatBlock offensive;
 	private final StatBlock defensive;
 	private final StatBlock bonuses;
@@ -38,6 +42,8 @@ public final class GearItem
 		this.id = id;
 		this.name = name == null ? "" : name;
 		this.version = version == null ? "" : version;
+		this.normalizedName = this.name.toLowerCase(Locale.ROOT);
+		this.normalizedLabel = (this.name + " " + this.version).toLowerCase(Locale.ROOT);
 		this.slot = slot;
 		this.category = category == null ? "" : category;
 		this.speed = speed;
@@ -49,6 +55,27 @@ public final class GearItem
 		this.defensive = defensive == null ? StatBlock.ZERO : defensive;
 		this.bonuses = bonuses == null ? StatBlock.ZERO : bonuses;
 		this.requirements = requirements == null ? GearRequirements.NONE : requirements;
+	}
+
+	/** Returns an immutable quote copy; public Wiki data only, never bank contents. */
+	public GearItem withPrices(int buyPrice, int sellPrice, long quoteTime)
+	{
+		GearItem quoted = new GearItem(id, name, version, slot, category, speed, twoHanded,
+			standardGear, tradeable, buyPrice > 0 ? Integer.valueOf(buyPrice) : estimatedPrice,
+			offensive, defensive, bonuses, requirements);
+		quoted.sellPrice = Math.max(0, sellPrice);
+		quoted.quoteTime = quoteTime;
+		return quoted;
+	}
+
+	public boolean hasLivePrice()
+	{
+		return quoteTime > 0 && System.currentTimeMillis() / 1000 - quoteTime <= 86_400;
+	}
+
+	public int getSellPriceOrZero()
+	{
+		return hasLivePrice() ? sellPrice : 0;
 	}
 
 	public boolean isWeaponFor(com.bestdps.calc.CombatStyle style)
@@ -77,9 +104,7 @@ public final class GearItem
 				return !normalized.contains("bow")
 					&& !normalized.contains("crossbow")
 					&& !normalized.contains("thrown")
-					&& !normalized.contains("chinchompa")
-					&& !normalized.contains("staff")
-					&& !normalized.contains("wand");
+					&& !normalized.contains("chinchompa");
 		}
 	}
 
@@ -125,8 +150,12 @@ public final class GearItem
 
 	private String normalizedLabel()
 	{
-		return (name + " " + version).toLowerCase(Locale.ROOT);
+		return normalizedLabel;
 	}
+
+	public String getNormalizedName() { return normalizedName; }
+
+	public String getNormalizedLabel() { return normalizedLabel; }
 
 	public int getPriceOrZero()
 	{

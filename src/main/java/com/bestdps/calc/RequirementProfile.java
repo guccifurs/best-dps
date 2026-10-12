@@ -36,8 +36,16 @@ public final class RequirementProfile
 		}
 		for (Map.Entry<String, Integer> entry : requirements.getSkills().entrySet())
 		{
+			if ("combat".equalsIgnoreCase(entry.getKey()))
+			{
+				double base = (level(Skill.DEFENCE) + level(Skill.HITPOINTS) + level(Skill.PRAYER) / 2) / 4.0;
+				int offence = Math.max(level(Skill.ATTACK) + level(Skill.STRENGTH),
+					Math.max(level(Skill.RANGED) * 3 / 2, level(Skill.MAGIC) * 3 / 2));
+				if ((int) (base + offence * 0.325) < entry.getValue()) { return false; }
+				continue;
+			}
 			Skill skill = skill(entry.getKey());
-			if (skill != null && levels.getOrDefault(skill, 1) < entry.getValue())
+			if (skill == null || levels.getOrDefault(skill, 1) < entry.getValue())
 			{
 				return false;
 			}
@@ -50,6 +58,11 @@ public final class RequirementProfile
 			}
 		}
 		return true;
+	}
+
+	public boolean hasCompletedQuest(Quest quest)
+	{
+		return quest != null && completedQuests.contains(quest.name());
 	}
 
 	int level(Skill skill)

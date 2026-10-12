@@ -2,6 +2,7 @@ package com.bestdps.data;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public final class BestDpsData
@@ -25,8 +26,8 @@ public final class BestDpsData
 
 	public List<MonsterStats> searchMonsters(String query, int limit)
 	{
-		String text = query == null ? "" : query.trim().toLowerCase();
-		if (text.isEmpty())
+		String text = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+		if (text.isEmpty() || limit <= 0)
 		{
 			return Collections.emptyList();
 		}
@@ -36,7 +37,7 @@ public final class BestDpsData
 		java.util.ArrayList<MonsterStats> contains = new java.util.ArrayList<>();
 		for (MonsterStats monster : monsters)
 		{
-			String name = monster.getName().toLowerCase();
+			String name = monster.normalizedName();
 			if (name.equals(text) || String.valueOf(monster.getId()).equals(text))
 			{
 				exact.add(monster);

@@ -13,6 +13,8 @@ public final class DpsResult
 	private final long defenceRoll;
 	private final int purchaseCost;
 	private final String spellName;
+	private final TradePlan tradePlan;
+	private final double baselineDps;
 
 	public DpsResult(
 		Loadout loadout,
@@ -41,6 +43,14 @@ public final class DpsResult
 		int purchaseCost,
 		String spellName)
 	{
+		this(loadout, dps, accuracy, expectedHit, maxHit, attackSpeed, attackType, attackRoll, defenceRoll,
+			purchaseCost, spellName, null, 0);
+	}
+
+	private DpsResult(Loadout loadout, double dps, double accuracy, double expectedHit, int maxHit,
+		int attackSpeed, String attackType, long attackRoll, long defenceRoll, int purchaseCost,
+		String spellName, TradePlan tradePlan, double baselineDps)
+	{
 		this.loadout = loadout;
 		this.dps = dps;
 		this.accuracy = accuracy;
@@ -52,11 +62,36 @@ public final class DpsResult
 		this.defenceRoll = defenceRoll;
 		this.purchaseCost = Math.max(0, purchaseCost);
 		this.spellName = spellName == null ? "" : spellName;
+		this.tradePlan = tradePlan;
+		this.baselineDps = Math.max(0, baselineDps);
 	}
 
 	public DpsResult withPurchaseCost(int purchaseCost)
 	{
-		return new DpsResult(loadout, dps, accuracy, expectedHit, maxHit, attackSpeed, attackType, attackRoll, defenceRoll, purchaseCost, spellName);
+		return new DpsResult(loadout, dps, accuracy, expectedHit, maxHit, attackSpeed, attackType, attackRoll, defenceRoll, purchaseCost, spellName, tradePlan, baselineDps);
+	}
+
+	public DpsResult withTradePlan(TradePlan plan)
+	{
+		int cost = plan == null ? purchaseCost : (int) Math.min(Integer.MAX_VALUE, plan.getBuyCost());
+		return new DpsResult(loadout, dps, accuracy, expectedHit, maxHit, attackSpeed, attackType,
+			attackRoll, defenceRoll, cost, spellName, plan, baselineDps);
+	}
+
+	public DpsResult withBaselineDps(double baseline)
+	{
+		return new DpsResult(loadout, dps, accuracy, expectedHit, maxHit, attackSpeed, attackType,
+			attackRoll, defenceRoll, purchaseCost, spellName, tradePlan, baseline);
+	}
+
+	public double getBaselineDps()
+	{
+		return baselineDps;
+	}
+
+	public TradePlan getTradePlan()
+	{
+		return tradePlan;
 	}
 
 	public Loadout getLoadout()

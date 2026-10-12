@@ -1,8 +1,11 @@
 package com.bestdps.data;
 
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class MonsterStats
 {
@@ -20,6 +23,13 @@ public final class MonsterStats
 	private final boolean slayerMonster;
 	private final String weaknessElement;
 	private final int weaknessSeverity;
+	private final int attack;
+	private final int strength;
+	private final int ranged;
+	private final String normalizedName;
+	private final String normalizedVersion;
+	private final String searchText;
+	private final Set<String> attributeSet;
 
 	public MonsterStats(
 		int id,
@@ -51,6 +61,15 @@ public final class MonsterStats
 		String weaknessElement,
 		int weaknessSeverity)
 	{
+		this(id, name, version, combatLevel, hitpoints, size, defence, magic, offensiveMagic,
+			defensive, attributes, slayerMonster, weaknessElement, weaknessSeverity, 1, 1, 1);
+	}
+
+	public MonsterStats(int id, String name, String version, int combatLevel, int hitpoints,
+		int size, int defence, int magic, int offensiveMagic, MonsterDefences defensive,
+		List<String> attributes, boolean slayerMonster, String weaknessElement, int weaknessSeverity,
+		int attack, int strength, int ranged)
+	{
 		this.id = id;
 		this.name = name == null ? "" : name;
 		this.version = version == null ? "" : version;
@@ -61,23 +80,30 @@ public final class MonsterStats
 		this.magic = magic;
 		this.offensiveMagic = offensiveMagic;
 		this.defensive = defensive == null ? MonsterDefences.ZERO : defensive;
-		this.attributes = attributes == null ? Collections.emptyList() : Collections.unmodifiableList(attributes);
+		this.attributes = attributes == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(attributes));
 		this.slayerMonster = slayerMonster;
 		this.weaknessElement = weaknessElement == null ? "" : weaknessElement.toLowerCase(Locale.ROOT);
 		this.weaknessSeverity = Math.max(0, weaknessSeverity);
+		this.attack = attack;
+		this.strength = strength;
+		this.ranged = ranged;
+		this.normalizedName = this.name.toLowerCase(Locale.ROOT);
+		this.normalizedVersion = this.version.toLowerCase(Locale.ROOT);
+		this.searchText = normalizedName + " " + normalizedVersion + " " + id;
+		Set<String> normalizedAttributes = new HashSet<>();
+		for (String attribute : this.attributes)
+		{
+			if (attribute != null)
+			{
+				normalizedAttributes.add(attribute.toLowerCase(Locale.ROOT));
+			}
+		}
+		this.attributeSet = Collections.unmodifiableSet(normalizedAttributes);
 	}
 
 	public boolean hasAttribute(String attribute)
 	{
-		String normalized = attribute.toLowerCase(Locale.ROOT);
-		for (String value : attributes)
-		{
-			if (value != null && value.toLowerCase(Locale.ROOT).equals(normalized))
-			{
-				return true;
-			}
-		}
-		return false;
+		return attribute != null && attributeSet.contains(attribute.toLowerCase(Locale.ROOT));
 	}
 
 	public String label()
@@ -88,7 +114,32 @@ public final class MonsterStats
 
 	public String searchText()
 	{
-		return (name + " " + version + " " + id).toLowerCase(Locale.ROOT);
+		return searchText;
+	}
+
+	public String normalizedName() { return normalizedName; }
+	public String normalizedVersion() { return normalizedVersion; }
+	public int getAttack() { return attack; }
+	public int getStrength() { return strength; }
+	public int getRanged() { return ranged; }
+
+	/** Preserve the selected NPC variant while applying encounter inputs once. */
+	public MonsterStats withCombatStats(int hp, int def, int mage)
+	{
+		return new MonsterStats(id, name, version, combatLevel, hp, size, def, mage, offensiveMagic,
+			defensive, attributes, slayerMonster, weaknessElement, weaknessSeverity, attack, strength, ranged);
+	}
+
+	public MonsterStats withVersion(String phase)
+	{
+		return new MonsterStats(id, name, phase, combatLevel, hitpoints, size, defence, magic, offensiveMagic,
+			defensive, attributes, slayerMonster, weaknessElement, weaknessSeverity, attack, strength, ranged);
+	}
+
+	public MonsterStats withMagicDefenceBonus(int bonus)
+	{
+		return new MonsterStats(id, name, version, combatLevel, hitpoints, size, defence, magic, offensiveMagic,
+			defensive.withMagic(bonus), attributes, slayerMonster, weaknessElement, weaknessSeverity, attack, strength, ranged);
 	}
 
 	public int getId()

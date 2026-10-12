@@ -31,21 +31,27 @@ public final class PrayerBonuses
 
 	public static PrayerBonuses bestAvailable(PlayerLevels levels)
 	{
+		return bestAvailable(levels, true, true, true, true, true);
+	}
+
+	public static PrayerBonuses bestAvailable(PlayerLevels levels, boolean knightWaves,
+		boolean rigour, boolean augury, boolean deadeye, boolean mysticVigour)
+	{
 		double meleeAcc = 1.0;
 		double meleeStr = 1.0;
-		if (levels.getPrayer() >= 70)
+		if (levels.getPrayer() >= 70 && levels.getDefence() >= 70 && knightWaves)
 		{
 			meleeAcc = 1.20;
 			meleeStr = 1.23;
 		}
-		else if (levels.getPrayer() >= 60)
+		else if (levels.getPrayer() >= 60 && levels.getDefence() >= 65 && knightWaves)
 		{
 			meleeAcc = 1.15;
 			meleeStr = 1.18;
 		}
 		else
 		{
-			if (levels.getPrayer() >= 31)
+			if (levels.getPrayer() >= 34)
 			{
 				meleeAcc = 1.15;
 			}
@@ -71,10 +77,10 @@ public final class PrayerBonuses
 			}
 		}
 
-		double rangedAccuracy = levels.getPrayer() >= 74 ? 1.20 : levels.getPrayer() >= 44 ? 1.15 : levels.getPrayer() >= 26 ? 1.10 : levels.getPrayer() >= 8 ? 1.05 : 1.0;
-		double rangedStrength = levels.getPrayer() >= 74 ? 1.23 : levels.getPrayer() >= 44 ? 1.15 : levels.getPrayer() >= 26 ? 1.10 : levels.getPrayer() >= 8 ? 1.05 : 1.0;
-		double magic = levels.getPrayer() >= 77 ? 1.25 : levels.getPrayer() >= 45 ? 1.15 : levels.getPrayer() >= 27 ? 1.10 : levels.getPrayer() >= 9 ? 1.05 : 1.0;
-		double magicDamage = levels.getPrayer() >= 77 ? 4.0 : levels.getPrayer() >= 45 ? 2.0 : levels.getPrayer() >= 27 ? 1.0 : 0.0;
+		double rangedAccuracy = levels.getPrayer() >= 74 && levels.getDefence() >= 70 && rigour ? 1.20 : levels.getPrayer() >= 62 && deadeye ? 1.18 : levels.getPrayer() >= 44 && !deadeye ? 1.15 : levels.getPrayer() >= 26 ? 1.10 : levels.getPrayer() >= 8 ? 1.05 : 1.0;
+		double rangedStrength = levels.getPrayer() >= 74 && levels.getDefence() >= 70 && rigour ? 1.23 : levels.getPrayer() >= 62 && deadeye ? 1.18 : levels.getPrayer() >= 44 && !deadeye ? 1.15 : levels.getPrayer() >= 26 ? 1.10 : levels.getPrayer() >= 8 ? 1.05 : 1.0;
+		double magic = levels.getPrayer() >= 77 && levels.getDefence() >= 70 && augury ? 1.25 : levels.getPrayer() >= 63 && mysticVigour ? 1.18 : levels.getPrayer() >= 45 && !mysticVigour ? 1.15 : levels.getPrayer() >= 27 ? 1.10 : levels.getPrayer() >= 9 ? 1.05 : 1.0;
+		double magicDamage = levels.getPrayer() >= 77 && levels.getDefence() >= 70 && augury ? 4.0 : levels.getPrayer() >= 63 && mysticVigour ? 3.0 : levels.getPrayer() >= 45 && !mysticVigour ? 2.0 : levels.getPrayer() >= 27 ? 1.0 : 0.0;
 		return new PrayerBonuses(meleeAcc, meleeStr, rangedAccuracy, rangedStrength, magic, magicDamage);
 	}
 

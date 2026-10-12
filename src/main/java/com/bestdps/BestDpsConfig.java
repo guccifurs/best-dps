@@ -40,7 +40,7 @@ public interface BestDpsConfig extends Config
 	)
 	default boolean includeUntradeables()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -51,7 +51,7 @@ public interface BestDpsConfig extends Config
 	)
 	default boolean useMyLevels()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -85,5 +85,16 @@ public interface BestDpsConfig extends Config
 	default boolean readProfileOnStartup()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "sellOwnedItems",
+		name = "Suggest selling unused gear",
+		description = "Allow selling cached tradeable gear to fund upgrades; suggestions only, never trades",
+		position = 8
+	)
+	default boolean sellOwnedItems()
+	{
+		return false;
 	}
 }

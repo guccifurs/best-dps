@@ -140,12 +140,39 @@ public final class BestDpsDataService
 				integer(offensive, "magic", 0),
 				parseMonsterDefences(defensive),
 				attributes,
-				bool(row, "is_slayer_monster", false) || knownSlayerMonster(string(row, "name")),
+				bool(row, "is_slayer_monster", false),
 				string(weakness, "element"),
-				integer(weakness, "severity", 0)));
+				integer(weakness, "severity", 0),
+				integer(skills, "atk", 1),
+				integer(skills, "str", 1),
+				integer(skills, "ranged", 1)));
 		}
-		result.sort(Comparator.comparing(MonsterStats::getName).thenComparing(MonsterStats::getVersion).thenComparingInt(MonsterStats::getId));
-		return result;
+		List<MonsterStats> phases = new ArrayList<>();
+		for (MonsterStats monster : result)
+		{
+			if (monster.normalizedName().equals("tormented demon"))
+			{
+				phases.add(monster.withVersion(monster.getVersion() + ", Shielded"));
+				phases.add(monster.withVersion(monster.getVersion() + ", Defenceless (shielded)"));
+				phases.add(monster.withVersion(monster.getVersion() + ", Unshielded bonus hit"));
+			}
+			else if (monster.normalizedName().equals("yama") && monster.normalizedVersion().equals("normal"))
+			{
+				phases.add(monster.withVersion("Normal, tank uses melee/ranged").withMagicDefenceBonus(-30));
+				phases.add(monster.withVersion("Normal, tank uses magic").withMagicDefenceBonus(60));
+			}
+			else
+			{
+				phases.add(monster);
+				if (monster.normalizedName().equals("the hueycoatl")
+					&& (monster.normalizedVersion().equals("normal") || monster.normalizedVersion().equals("tail")))
+				{
+					phases.add(monster.withVersion(monster.getVersion() + ", with pillar"));
+				}
+			}
+		}
+		phases.sort(Comparator.comparing(MonsterStats::getName).thenComparing(MonsterStats::getVersion).thenComparingInt(MonsterStats::getId));
+		return phases;
 	}
 
 	private List<SpellStats> loadSpells()
@@ -200,6 +227,10 @@ public final class BestDpsDataService
 				return 47;
 			case "Iban Blast":
 				return 50;
+			case "Snare":
+				return 50;
+			case "Entangle":
+				return 79;
 			case "Magic Dart":
 				return 50;
 			case "Earth Blast":
@@ -271,7 +302,7 @@ public final class BestDpsDataService
 			case "Dark Demonbane":
 				return 82;
 			default:
-				return 1;
+				return Integer.MAX_VALUE;
 		}
 	}
 
@@ -325,9 +356,9 @@ public final class BestDpsDataService
 			integer(object, "magic", 0),
 			integer(object, "ranged", 0),
 			0,
-			integer(object, "light", 0),
-			integer(object, "standard", 0),
-			integer(object, "heavy", 0));
+			integer(object, "light", integer(object, "ranged", 0)),
+			integer(object, "standard", integer(object, "ranged", 0)),
+			integer(object, "heavy", integer(object, "ranged", 0)));
 	}
 
 	private static MonsterDefences parseMonsterDefences(JsonObject object)
@@ -343,9 +374,9 @@ public final class BestDpsDataService
 			integer(object, "magic", 0),
 			integer(object, "ranged", 0),
 			integer(object, "flat_armour", 0),
-			integer(object, "light", 0),
-			integer(object, "standard", 0),
-			integer(object, "heavy", 0));
+			integer(object, "light", integer(object, "ranged", 0)),
+			integer(object, "standard", integer(object, "ranged", 0)),
+			integer(object, "heavy", integer(object, "ranged", 0)));
 	}
 
 	private static StatBlock parseBonuses(JsonObject object)
